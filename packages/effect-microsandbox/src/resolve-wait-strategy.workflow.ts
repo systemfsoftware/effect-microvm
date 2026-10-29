@@ -11,24 +11,30 @@ type WaitStrategyDecisionTypeId = typeof WaitStrategyDecisionTypeId
 
 const { Condition } = Readiness
 
-export class WaitRequired extends Schema.TaggedClass<WaitRequired>()('WaitRequired', {
-  strategy: WaitStrategy,
-  condition: Condition,
-  label: Schema.String,
-}) {
+export class WaitRequired
+  extends Schema.TaggedClass<WaitRequired, { readonly brand: unique symbol }>()('WaitRequired', {
+    strategy: WaitStrategy,
+    condition: Condition,
+    label: Schema.String,
+  })
+{
   readonly [WaitStrategyDecisionTypeId] = WaitStrategyDecisionTypeId
 }
 
-export class WaitSkipped extends Schema.TaggedClass<WaitSkipped>()('WaitSkipped', {}) {
+export class WaitSkipped
+  extends Schema.TaggedClass<WaitSkipped, { readonly brand: unique symbol }>()('WaitSkipped', {})
+{
   readonly [WaitStrategyDecisionTypeId] = WaitStrategyDecisionTypeId
 }
 
 export const WaitStrategyDecision = Schema.Union([WaitRequired, WaitSkipped])
 export type WaitStrategyDecision = typeof WaitStrategyDecision.Type
 
-export class ResolveWaitStrategy extends Schema.TaggedClass<ResolveWaitStrategy>()('ResolveWaitStrategy', {
-  spec: MicroVMSpec,
-}) {
+export class ResolveWaitStrategy
+  extends Schema.TaggedClass<ResolveWaitStrategy, { readonly brand: unique symbol }>()('ResolveWaitStrategy', {
+    spec: MicroVMSpec,
+  })
+{
   static readonly [Workflow.InstrumentationBrand] = {} as const
 }
 

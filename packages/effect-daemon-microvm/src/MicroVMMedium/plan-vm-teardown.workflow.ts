@@ -6,26 +6,30 @@ import * as Result from 'effect/Result'
 const VmTeardownTypeId: unique symbol = Symbol.for('@systemfsoftware/effect-daemon-microvm/VmTeardown')
 type VmTeardownTypeId = typeof VmTeardownTypeId
 
-export class KillVm extends Schema.TaggedClass<KillVm>()('KillVm', {}) {
+export class KillVm extends Schema.TaggedClass<KillVm, { readonly brand: unique symbol }>()('KillVm', {}) {
   readonly [VmTeardownTypeId] = VmTeardownTypeId
 }
 
-export class StopVmWithin extends Schema.TaggedClass<StopVmWithin>()('StopVmWithin', {
-  millis: Schema.Int,
-}) {
+export class StopVmWithin
+  extends Schema.TaggedClass<StopVmWithin, { readonly brand: unique symbol }>()('StopVmWithin', {
+    millis: Schema.Int,
+  })
+{
   readonly [VmTeardownTypeId] = VmTeardownTypeId
 }
 
-export class StopVm extends Schema.TaggedClass<StopVm>()('StopVm', {}) {
+export class StopVm extends Schema.TaggedClass<StopVm, { readonly brand: unique symbol }>()('StopVm', {}) {
   readonly [VmTeardownTypeId] = VmTeardownTypeId
 }
 
 export const VmTeardown = Schema.Union([KillVm, StopVmWithin, StopVm])
 export type VmTeardown = typeof VmTeardown.Type
 
-export class PlanVmTeardown extends Schema.TaggedClass<PlanVmTeardown>()('PlanVmTeardown', {
-  mode: Supervisor.Medium.ShutdownMode,
-}) {
+export class PlanVmTeardown
+  extends Schema.TaggedClass<PlanVmTeardown, { readonly brand: unique symbol }>()('PlanVmTeardown', {
+    mode: Supervisor.Medium.ShutdownMode,
+  })
+{
   static readonly [Workflow.InstrumentationBrand] = {} as const
 }
 

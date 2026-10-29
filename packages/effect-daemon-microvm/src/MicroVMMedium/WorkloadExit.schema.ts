@@ -4,13 +4,17 @@ import { Match, Schema } from 'effect'
 const WorkloadExitTypeId: unique symbol = Symbol.for('@systemfsoftware/effect-daemon-microvm/WorkloadExit')
 type WorkloadExitTypeId = typeof WorkloadExitTypeId
 
-export class WorkloadExitedNormal extends Schema.TaggedClass<WorkloadExitedNormal>()('WorkloadExitedNormal', {}) {
+export class WorkloadExitedNormal
+  extends Schema.TaggedClass<WorkloadExitedNormal, { readonly brand: unique symbol }>()('WorkloadExitedNormal', {})
+{
   readonly [WorkloadExitTypeId] = WorkloadExitTypeId
 }
 
-export class WorkloadExitedAbnormal extends Schema.TaggedClass<WorkloadExitedAbnormal>()('WorkloadExitedAbnormal', {
-  code: Schema.Int,
-}) {
+export class WorkloadExitedAbnormal
+  extends Schema.TaggedClass<WorkloadExitedAbnormal, { readonly brand: unique symbol }>()('WorkloadExitedAbnormal', {
+    code: Schema.Int,
+  })
+{
   readonly [WorkloadExitTypeId] = WorkloadExitTypeId
 }
 

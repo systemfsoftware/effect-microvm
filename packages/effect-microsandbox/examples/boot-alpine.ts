@@ -11,21 +11,21 @@ import assert from 'node:assert'
 import { Buffer } from 'node:buffer'
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http'
 
-export class HostListenerError extends Schema.TaggedError<HostListenerError>()(
+export class HostListenerError extends Schema.TaggedError<HostListenerError, { readonly brand: unique symbol }>()(
   'HostListenerError',
   {
     cause: Schema.Unknown,
   },
 ) {}
 
-export class SandboxListingError extends Schema.TaggedError<SandboxListingError>()(
+export class SandboxListingError extends Schema.TaggedError<SandboxListingError, { readonly brand: unique symbol }>()(
   'SandboxListingError',
   {
     cause: Schema.Unknown,
   },
 ) {}
 
-export class EscapeHatchDefect extends Schema.TaggedError<EscapeHatchDefect>()(
+export class EscapeHatchDefect extends Schema.TaggedError<EscapeHatchDefect, { readonly brand: unique symbol }>()(
   'EscapeHatchDefect',
   {},
 ) {}

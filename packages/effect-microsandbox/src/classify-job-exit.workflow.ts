@@ -3,11 +3,13 @@ import { Option, Schema } from 'effect'
 import * as Result from 'effect/Result'
 import { JobExited, JobExitStatus, JobSignaled } from './JobExitStatus.schema.js'
 
-export class ClassifyJobExit extends Schema.TaggedClass<ClassifyJobExit>()('ClassifyJobExit', {
-  code: Schema.Int,
-  stdout: Schema.Uint8Array,
-  stderr: Schema.Uint8Array,
-}) {
+export class ClassifyJobExit
+  extends Schema.TaggedClass<ClassifyJobExit, { readonly brand: unique symbol }>()('ClassifyJobExit', {
+    code: Schema.Int,
+    stdout: Schema.Uint8Array,
+    stderr: Schema.Uint8Array,
+  })
+{
   static readonly [Workflow.InstrumentationBrand] = { code: 'microsandbox.job.exit.code' } as const
 }
 

@@ -5,13 +5,15 @@ const JobExitStatusTypeId: unique symbol = Symbol.for(
 )
 type JobExitStatusTypeId = typeof JobExitStatusTypeId
 
-export class JobExited extends Schema.TaggedClass<JobExited>()('JobExited', {
+export class JobExited extends Schema.TaggedClass<JobExited, { readonly brand: unique symbol }>()('JobExited', {
   code: Schema.Natural,
 }) {
   readonly [JobExitStatusTypeId] = JobExitStatusTypeId
 }
 
-export class JobSignaled extends Schema.TaggedClass<JobSignaled>()('JobSignaled', {}) {
+export class JobSignaled
+  extends Schema.TaggedClass<JobSignaled, { readonly brand: unique symbol }>()('JobSignaled', {})
+{
   readonly [JobExitStatusTypeId] = JobExitStatusTypeId
 }
 
