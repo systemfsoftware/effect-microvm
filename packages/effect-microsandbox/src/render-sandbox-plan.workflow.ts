@@ -8,14 +8,16 @@ import { PortBinding, SandboxPlan } from './render-sandbox-plan.schema.js'
 const PlanTypeId: unique symbol = Symbol.for('@systemfsoftware/effect-microsandbox/SandboxPlanDecision')
 type PlanTypeId = typeof PlanTypeId
 
-export class PlanApproved extends Schema.TaggedClass<PlanApproved>()('PlanApproved', {
-  plan: SandboxPlan,
-  guests: Schema.Array(GuestPort),
-}) {
+export class PlanApproved
+  extends Schema.TaggedClass<PlanApproved, { readonly brand: unique symbol }>()('PlanApproved', {
+    plan: SandboxPlan,
+    guests: Schema.Array(GuestPort),
+  })
+{
   readonly [PlanTypeId] = PlanTypeId
 }
 
-export class PlanRefused extends Schema.TaggedClass<PlanRefused>()('PlanRefused', {
+export class PlanRefused extends Schema.TaggedClass<PlanRefused, { readonly brand: unique symbol }>()('PlanRefused', {
   sandboxName: Schema.String,
   host: Schema.String,
   guestPort: GuestPort,
@@ -26,7 +28,7 @@ export class PlanRefused extends Schema.TaggedClass<PlanRefused>()('PlanRefused'
 export const SandboxPlanDecision = Schema.Union([PlanApproved, PlanRefused])
 export type SandboxPlanDecision = typeof SandboxPlanDecision.Type
 
-export class PlanSandbox extends Schema.TaggedClass<PlanSandbox>()('PlanSandbox', {
+export class PlanSandbox extends Schema.TaggedClass<PlanSandbox, { readonly brand: unique symbol }>()('PlanSandbox', {
   spec: MicroVMSpec,
   bindings: Schema.Array(PortBinding),
   name: Schema.String,

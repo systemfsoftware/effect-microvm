@@ -4,13 +4,17 @@ import { Context, Effect, Layer, Match, Option, Schema } from 'effect'
 import type { ExecEvent, ExecHandle, ExecSink, ResolvedRuntime, Sandbox } from 'microsandbox'
 import { ABNORMAL_EXIT_CODE, READY_TOKEN } from './child-script.js'
 
-export class MachineLeftBehind extends Schema.TaggedError<MachineLeftBehind>()('MachineLeftBehind', {
-  names: Schema.Array(Schema.String),
-}) {}
+export class MachineLeftBehind
+  extends Schema.TaggedError<MachineLeftBehind, { readonly brand: unique symbol }>()('MachineLeftBehind', {
+    names: Schema.Array(Schema.String),
+  })
+{}
 
-export class ExceptionalTermination extends Schema.TaggedError<ExceptionalTermination>()('ExceptionalTermination', {
-  observed: Schema.String,
-}) {}
+export class ExceptionalTermination
+  extends Schema.TaggedError<ExceptionalTermination, { readonly brand: unique symbol }>()('ExceptionalTermination', {
+    observed: Schema.String,
+  })
+{}
 
 export type SandboxBehaviour = 'waits-for-steps' | 'ends-after-started'
 

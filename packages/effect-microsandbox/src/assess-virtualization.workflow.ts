@@ -7,30 +7,36 @@ import { ProbeObservation } from './classify-probe-observation.workflow.js'
 const VerdictTypeId: unique symbol = Symbol.for('@systemfsoftware/effect-microsandbox/VirtualizationVerdict')
 type VerdictTypeId = typeof VerdictTypeId
 
-export class VirtualizationEligible extends Schema.TaggedClass<VirtualizationEligible>()(
-  'VirtualizationEligible',
-  {},
-) {
+export class VirtualizationEligible
+  extends Schema.TaggedClass<VirtualizationEligible, { readonly brand: unique symbol }>()(
+    'VirtualizationEligible',
+    {},
+  )
+{
   readonly [VerdictTypeId] = VerdictTypeId
 }
 
-export class VirtualizationRefused extends Schema.TaggedClass<VirtualizationRefused>()(
-  'VirtualizationRefused',
-  {
-    remediation: Schema.String,
-    topology: Schema.String,
-  },
-) {
+export class VirtualizationRefused
+  extends Schema.TaggedClass<VirtualizationRefused, { readonly brand: unique symbol }>()(
+    'VirtualizationRefused',
+    {
+      remediation: Schema.String,
+      topology: Schema.String,
+    },
+  )
+{
   readonly [VerdictTypeId] = VerdictTypeId
 }
 
 export const VirtualizationVerdict = Schema.Union([VirtualizationEligible, VirtualizationRefused])
 export type VirtualizationVerdict = typeof VirtualizationVerdict.Type
 
-export class AssessVirtualization extends Schema.TaggedClass<AssessVirtualization>()('AssessVirtualization', {
-  platform: Schema.String,
-  observation: ProbeObservation,
-}) {
+export class AssessVirtualization
+  extends Schema.TaggedClass<AssessVirtualization, { readonly brand: unique symbol }>()('AssessVirtualization', {
+    platform: Schema.String,
+    observation: ProbeObservation,
+  })
+{
   static readonly [Workflow.InstrumentationBrand] = { platform: 'microsandbox.virtualization.platform' } as const
 }
 const REMEDIATIONS = {

@@ -7,32 +7,46 @@ const ProbeObservationTypeId: unique symbol = Symbol.for(
 )
 type ProbeObservationTypeId = typeof ProbeObservationTypeId
 
-export class KvmAccessible extends Schema.TaggedClass<KvmAccessible>()('KvmAccessible', {}) {
+export class KvmAccessible
+  extends Schema.TaggedClass<KvmAccessible, { readonly brand: unique symbol }>()('KvmAccessible', {})
+{
   readonly [ProbeObservationTypeId] = ProbeObservationTypeId
 }
 
-export class KvmDenied extends Schema.TaggedClass<KvmDenied>()('KvmDenied', { topology: Schema.String }) {
+export class KvmDenied
+  extends Schema.TaggedClass<KvmDenied, { readonly brand: unique symbol }>()('KvmDenied', { topology: Schema.String })
+{
   readonly [ProbeObservationTypeId] = ProbeObservationTypeId
 }
 
-export class KvmAbsent extends Schema.TaggedClass<KvmAbsent>()('KvmAbsent', { topology: Schema.String }) {
+export class KvmAbsent
+  extends Schema.TaggedClass<KvmAbsent, { readonly brand: unique symbol }>()('KvmAbsent', { topology: Schema.String })
+{
   readonly [ProbeObservationTypeId] = ProbeObservationTypeId
 }
 
-export class HvfUnavailable extends Schema.TaggedClass<HvfUnavailable>()('HvfUnavailable', { arch: Schema.String }) {
+export class HvfUnavailable
+  extends Schema.TaggedClass<HvfUnavailable, { readonly brand: unique symbol }>()('HvfUnavailable', {
+    arch: Schema.String,
+  })
+{
   readonly [ProbeObservationTypeId] = ProbeObservationTypeId
 }
 
-export class WHPUnavailable extends Schema.TaggedClass<WHPUnavailable>()('WHPUnavailable', {
-  topology: Schema.String,
-}) {
+export class WHPUnavailable
+  extends Schema.TaggedClass<WHPUnavailable, { readonly brand: unique symbol }>()('WHPUnavailable', {
+    topology: Schema.String,
+  })
+{
   readonly [ProbeObservationTypeId] = ProbeObservationTypeId
 }
 
-export class PlatformUnsupported extends Schema.TaggedClass<PlatformUnsupported>()('PlatformUnsupported', {
-  platform: Schema.String,
-  arch: Schema.String,
-}) {
+export class PlatformUnsupported
+  extends Schema.TaggedClass<PlatformUnsupported, { readonly brand: unique symbol }>()('PlatformUnsupported', {
+    platform: Schema.String,
+    arch: Schema.String,
+  })
+{
   readonly [ProbeObservationTypeId] = ProbeObservationTypeId
 }
 
@@ -46,33 +60,43 @@ export const ProbeObservation = Schema.Union([
 ])
 export type ProbeObservation = typeof ProbeObservation.Type
 
-export class KvmDeviceFacts extends Schema.TaggedClass<KvmDeviceFacts>()('KvmDeviceFacts', {
-  accessible: Schema.Boolean,
-  present: Schema.Boolean,
-}) {}
+export class KvmDeviceFacts
+  extends Schema.TaggedClass<KvmDeviceFacts, { readonly brand: unique symbol }>()('KvmDeviceFacts', {
+    accessible: Schema.Boolean,
+    present: Schema.Boolean,
+  })
+{}
 
-export class VmcomputeFacts extends Schema.TaggedClass<VmcomputeFacts>()('VmcomputeFacts', {
-  present: Schema.Boolean,
-}) {}
+export class VmcomputeFacts
+  extends Schema.TaggedClass<VmcomputeFacts, { readonly brand: unique symbol }>()('VmcomputeFacts', {
+    present: Schema.Boolean,
+  })
+{}
 
-export class AppleHypervisorFacts extends Schema.TaggedClass<AppleHypervisorFacts>()('AppleHypervisorFacts', {
-  arch: Schema.String,
-}) {}
+export class AppleHypervisorFacts
+  extends Schema.TaggedClass<AppleHypervisorFacts, { readonly brand: unique symbol }>()('AppleHypervisorFacts', {
+    arch: Schema.String,
+  })
+{}
 
-export class NoProbeForPlatform extends Schema.TaggedClass<NoProbeForPlatform>()('NoProbeForPlatform', {
-  arch: Schema.String,
-}) {}
+export class NoProbeForPlatform
+  extends Schema.TaggedClass<NoProbeForPlatform, { readonly brand: unique symbol }>()('NoProbeForPlatform', {
+    arch: Schema.String,
+  })
+{}
 
 export const ProbeFacts = Schema.Union([KvmDeviceFacts, VmcomputeFacts, AppleHypervisorFacts, NoProbeForPlatform])
 export type ProbeFacts = typeof ProbeFacts.Type
 
-export class ClassifyProbeObservation extends Schema.TaggedClass<ClassifyProbeObservation>()(
-  'ClassifyProbeObservation',
-  {
-    platform: Schema.String,
-    facts: ProbeFacts,
-  },
-) {
+export class ClassifyProbeObservation
+  extends Schema.TaggedClass<ClassifyProbeObservation, { readonly brand: unique symbol }>()(
+    'ClassifyProbeObservation',
+    {
+      platform: Schema.String,
+      facts: ProbeFacts,
+    },
+  )
+{
   static readonly [Workflow.InstrumentationBrand] = { platform: 'microsandbox.virtualization.platform' } as const
 }
 

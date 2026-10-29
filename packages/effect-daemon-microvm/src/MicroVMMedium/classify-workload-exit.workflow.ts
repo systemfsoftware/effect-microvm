@@ -3,9 +3,11 @@ import { Match, Schema } from 'effect'
 import * as Result from 'effect/Result'
 import { WorkloadExit, WorkloadExitedAbnormal, WorkloadExitedNormal } from './WorkloadExit.schema.js'
 
-export class ClassifyWorkloadExit extends Schema.TaggedClass<ClassifyWorkloadExit>()('ClassifyWorkloadExit', {
-  code: Schema.Int,
-}) {
+export class ClassifyWorkloadExit
+  extends Schema.TaggedClass<ClassifyWorkloadExit, { readonly brand: unique symbol }>()('ClassifyWorkloadExit', {
+    code: Schema.Int,
+  })
+{
   static readonly [Workflow.InstrumentationBrand] = { code: 'microvm.workload.exit.code' } as const
 }
 
