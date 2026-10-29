@@ -2,7 +2,7 @@ import { Supervisor } from '@systemfsoftware/effect-daemon-spec'
 import { MicroVM } from '@systemfsoftware/effect-microsandbox'
 import type { Readiness } from '@systemfsoftware/effect-readiness'
 import { Deferred, Effect, Layer, Match, Option, Ref, Scope, Stream } from 'effect'
-import type * as Crypto from 'effect/Crypto'
+import type * as SecureRandom from 'effect/crypto/SecureRandom'
 import type * as FileSystem from 'effect/FileSystem'
 import { absurd } from 'effect/Function'
 import * as Result from 'effect/Result'
@@ -23,7 +23,7 @@ export interface MicroVMMediumOptions {
   readonly memoryMb?: number
 }
 
-type Requirements = Scope.Scope | Crypto.Crypto | FileSystem.FileSystem | Readiness.HostProber
+type Requirements = Scope.Scope | SecureRandom.SecureRandom | FileSystem.FileSystem | Readiness.HostProber
 
 type PortShape = Supervisor.Medium.MediumPortShape<MicroVMProgram, MicroVM.MicroVMError, Requirements>
 

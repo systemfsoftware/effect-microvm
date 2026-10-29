@@ -12,6 +12,7 @@ pnpm add @systemfsoftware/effect-microsandbox
 
 ```ts
 import { NodeRuntime } from '@effect/platform-node'
+import * as NodeCrypto from '@effect/platform-node/NodeCrypto'
 import { layer as nodeServicesLayer } from '@effect/platform-node/NodeServices'
 import { MicroVM } from '@systemfsoftware/effect-microsandbox'
 import { Readiness } from '@systemfsoftware/effect-readiness'
@@ -30,7 +31,12 @@ const program = Effect.scoped(
   }),
 )
 
-NodeRuntime.runMain(Effect.provide(program, Layer.merge(nodeServicesLayer, Readiness.NodeHostProber.layer)))
+NodeRuntime.runMain(
+  Effect.provide(
+    program,
+    Layer.mergeAll(nodeServicesLayer, NodeCrypto.layerSecureRandom, Readiness.NodeHostProber.layer),
+  ),
+)
 ```
 
 When the scope closes — normally or through interruption — the sandbox is stopped, destroyed, and its record removed. There is nothing to clean up by hand.
@@ -43,7 +49,7 @@ Shared-kernel containers leak state between tests and require a local Docker soc
 
 ### Layer & Scoped Execution
 
-A configured container specification (`MicroVM.spec(...)`) directly exposes `.scoped` (to acquire inside an `Effect.scoped` block) and `.layer` (to provide as a testcontainer `Layer`). In accordance with `compound-packs/cell-architecture`, platform dependencies (`Crypto`, `FileSystem`, and the readiness `HostProber`) propagate to `R` — `.scoped` and `.run` carry them in the effect's requirements, and `.layer` carries them in the layer's input requirements — and are satisfied once at your application or test composition root (such as `@effect/platform-node/NodeServices` plus `Readiness.NodeHostProber.layer`).
+A configured container specification (`MicroVM.spec(...)`) directly exposes `.scoped` (to acquire inside an `Effect.scoped` block) and `.layer` (to provide as a testcontainer `Layer`). In accordance with `compound-packs/cell-architecture`, platform dependencies (`SecureRandom`, `FileSystem`, and the readiness `HostProber`) propagate to `R` — `.scoped` and `.run` carry them in the effect's requirements, and `.layer` carries them in the layer's input requirements — and are satisfied once at your application or test composition root (such as `@effect/platform-node/NodeServices`, `@effect/platform-node/NodeCrypto`'s `layerSecureRandom`, plus `Readiness.NodeHostProber.layer`).
 
 ## Specifying Containers
 
@@ -90,6 +96,7 @@ VM startup does not complete until the specified wait strategy passes (30-second
 
 ```ts
 import { NodeRuntime } from '@effect/platform-node'
+import * as NodeCrypto from '@effect/platform-node/NodeCrypto'
 import { layer as nodeServicesLayer } from '@effect/platform-node/NodeServices'
 import { MicroVM } from '@systemfsoftware/effect-microsandbox'
 import { Readiness } from '@systemfsoftware/effect-readiness'
@@ -111,7 +118,12 @@ const program = Effect.scoped(
   }),
 )
 
-NodeRuntime.runMain(Effect.provide(program, Layer.merge(nodeServicesLayer, Readiness.NodeHostProber.layer)))
+NodeRuntime.runMain(
+  Effect.provide(
+    program,
+    Layer.mergeAll(nodeServicesLayer, NodeCrypto.layerSecureRandom, Readiness.NodeHostProber.layer),
+  ),
+)
 ```
 
 A `JobCompletion` holds:

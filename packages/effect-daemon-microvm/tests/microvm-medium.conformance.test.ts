@@ -5,7 +5,8 @@ import { MicroVMMedium } from '@systemfsoftware/effect-daemon-microvm'
 import { Supervisor } from '@systemfsoftware/effect-daemon-spec'
 import { Gherkin, Given, it, makeFeature, Then, When } from '@systemfsoftware/effect-gherkin-spec'
 import { Readiness } from '@systemfsoftware/effect-readiness'
-import { ConfigProvider, Crypto, Effect, Layer, Match, Stream } from 'effect'
+import { ConfigProvider, Effect, Layer, Match, Stream } from 'effect'
+import * as SecureRandom from 'effect/crypto/SecureRandom'
 import { FIXTURE_IMAGE, READY_TOKEN } from './__fixtures__/child-script.js'
 import {
   ExceptionalTermination,
@@ -41,11 +42,8 @@ const normalTermination = (reason: Supervisor.Medium.TerminationReason): Effect.
 const fakePlatform = (behaviour: SandboxBehaviour) =>
   Layer.mergeAll(
     Layer.succeed(
-      Crypto.Crypto,
-      Crypto.make({
-        randomBytes: (size) => new Uint8Array(size),
-        digest: () => Effect.succeed(new Uint8Array()),
-      }),
+      SecureRandom.SecureRandom,
+      SecureRandom.make((size) => new Uint8Array(size)),
     ),
     Layer.succeed(Readiness.HostProber, {
       dial: () => Effect.succeed({ _tag: 'Connected' as const }),

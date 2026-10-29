@@ -1,3 +1,4 @@
+import * as NodeCrypto from '@effect/platform-node/NodeCrypto'
 import { layer as nodeServicesLayer } from '@effect/platform-node/NodeServices'
 import type { Conformance } from '@systemfsoftware/effect-daemon-conformance'
 import { MicroVMMedium } from '@systemfsoftware/effect-daemon-microvm'
@@ -5,7 +6,7 @@ import { Gherkin, Given, it, makeFeature, Then } from '@systemfsoftware/effect-g
 import { MicroVM } from '@systemfsoftware/effect-microsandbox'
 import { Readiness } from '@systemfsoftware/effect-readiness'
 import { Context, Effect, Layer } from 'effect'
-import * as Crypto from 'effect/Crypto'
+import * as SecureRandom from 'effect/crypto/SecureRandom'
 import { Sandbox } from 'microsandbox'
 import { ABNORMAL_EXIT_CODE, childScriptWorkload } from './__fixtures__/child-script.js'
 import { featureNameOf, kvmGate } from './__fixtures__/kvm-gate.js'
@@ -19,10 +20,10 @@ class RunSandboxes extends Context.Service<RunSandboxes, { readonly prefix: stri
 const RunSandboxesLayer = Layer.effect(
   RunSandboxes,
   Effect.map(
-    Effect.flatMap(Crypto.Crypto, (crypto) => Effect.orDie(crypto.randomUUIDv4())),
+    Effect.flatMap(SecureRandom.SecureRandom, (random) => random.uuidV4()),
     (id) => ({ prefix: `run-${id.slice(0, 8)}-` }),
   ),
-).pipe(Layer.provide(nodeServicesLayer))
+).pipe(Layer.provide(NodeCrypto.layerSecureRandom))
 
 const hostSandboxRuntime = MicroVM.SandboxRuntime.defaultValue()
 
@@ -37,6 +38,7 @@ const RunScopedSandboxRuntimeLayer = Layer.effect(
 const MicroVMLayer = Layer.mergeAll(
   MicroVMMedium.layer(),
   nodeServicesLayer,
+  NodeCrypto.layerSecureRandom,
   Readiness.NodeHostProber.layer,
   RunScopedSandboxRuntimeLayer,
 ).pipe(Layer.provideMerge(RunSandboxesLayer))

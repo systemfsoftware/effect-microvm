@@ -2,7 +2,8 @@ import { layer as nodeFileSystemLayer } from '@effect/platform-node/NodeFileSyst
 import { Gherkin, Given, it, makeFeature, Then, When } from '@systemfsoftware/effect-gherkin-spec'
 import { MicroVM } from '@systemfsoftware/effect-microsandbox'
 import { Readiness } from '@systemfsoftware/effect-readiness'
-import { ConfigProvider, Crypto, Effect, Layer, Match, Metric } from 'effect'
+import { ConfigProvider, Effect, Layer, Match, Metric } from 'effect'
+import * as SecureRandom from 'effect/crypto/SecureRandom'
 import * as Result from 'effect/Result'
 import type * as Scope from 'effect/Scope'
 import { recordingSandboxRuntime, SandboxLedger } from './__fixtures__/sandbox-runtime.fixture.js'
@@ -14,11 +15,8 @@ const UNSUPPORTED_PLATFORM = 'freebsd'
 const twoPortService = MicroVM.spec('alpine:3.20').withExposedPorts([8080, 6379])
 
 const sharedCrypto = Layer.succeed(
-  Crypto.Crypto,
-  Crypto.make({
-    randomBytes: (size) => new Uint8Array(size),
-    digest: () => Effect.succeed(new Uint8Array()),
-  }),
+  SecureRandom.SecureRandom,
+  SecureRandom.make((size) => new Uint8Array(size)),
 )
 
 const hostProber = Layer.succeed(Readiness.HostProber, {

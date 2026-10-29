@@ -1,7 +1,7 @@
 import { Blueprint, Cell } from '@systemfsoftware/effect-cell-types'
 import { Readiness } from '@systemfsoftware/effect-readiness'
 import { type Context, Effect, Exit, Layer, Match, Schema } from 'effect'
-import * as Crypto from 'effect/Crypto'
+import type * as SecureRandom from 'effect/crypto/SecureRandom'
 import * as FileSystem from 'effect/FileSystem'
 import { dual } from 'effect/Function'
 import type * as Scope from 'effect/Scope'
@@ -91,13 +91,13 @@ const scopedOf = (
 ): Effect.Effect<
   RunningVM,
   MicroVMError,
-  Scope.Scope | Crypto.Crypto | FileSystem.FileSystem | Readiness.HostProber
+  Scope.Scope | SecureRandom.SecureRandom | FileSystem.FileSystem | Readiness.HostProber
 > => Effect.map(bootMicroVM.run(spec), runningVMOf)
 
 const layerOf = (spec: MicroVMSpec) =>
 <Id>(
   service: Context.Key<Id, RunningVM>,
-): Layer.Layer<Id, MicroVMError, Crypto.Crypto | FileSystem.FileSystem | Readiness.HostProber> =>
+): Layer.Layer<Id, MicroVMError, SecureRandom.SecureRandom | FileSystem.FileSystem | Readiness.HostProber> =>
   Layer.effect(service)(scopedOf(spec))
 
 const reviseJob = (job: JobSpec, patch: Partial<Omit<JobSpec, '_tag'>>): JobSpec => ({ ...job, ...patch })

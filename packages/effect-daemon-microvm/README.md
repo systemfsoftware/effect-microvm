@@ -23,6 +23,7 @@ writes to stdout when it is ready for work; a workload that names none is ready 
 starts.
 
 ```ts
+import * as NodeCrypto from '@effect/platform-node/NodeCrypto'
 import { layer as nodeServicesLayer } from '@effect/platform-node/NodeServices'
 import { MicroVMMedium } from '@systemfsoftware/effect-daemon-microvm'
 import { Supervisor } from '@systemfsoftware/effect-daemon-spec'
@@ -46,7 +47,12 @@ const tree = Supervisor.make('worker').pipe(
 
 const supervised = Effect.scoped(tree.scoped).pipe(
   Effect.provide(
-    Layer.mergeAll(MicroVMMedium.layer(), nodeServicesLayer, Readiness.NodeHostProber.layer),
+    Layer.mergeAll(
+      MicroVMMedium.layer(),
+      nodeServicesLayer,
+      NodeCrypto.layerSecureRandom,
+      Readiness.NodeHostProber.layer,
+    ),
   ),
 )
 ```
