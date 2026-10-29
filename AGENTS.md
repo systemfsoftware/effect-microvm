@@ -33,9 +33,11 @@ pnpm install
 
 - `pnpm check:local` before delivery: dprint, build, lint, typecheck, type tests, API reports, attw, tests at the
   local conformance profile.
-- CI (`.github/workflows/ci.yml`) calls core's reusable checks at a pinned core commit. A pull request runs the
-  local profile and skips packages whose test hash already passed; main and the merge queue run the per-change
-  profile and the real-microVM suites (`test:integration` of effect-daemon-microvm, and the effect-microsandbox smoke journeys). `nix.yml` builds the flake outputs on main only.
+- CI (`.github/workflows/ci.yml`) calls core's reusable checks at a pinned core commit. A pull request (and a
+  merge-queue draft) runs the static lane and the affected tests (`.github/ci/pr-tests.mjs`: `turbo --affected`,
+  `vitest --changed`, plus any `test:integration` file it touches) and no packed test job; main runs every package's
+  whole suite at the per-change profile, effect-daemon-microvm's `test:integration` and the effect-microsandbox smoke
+  journeys, with KVM granted. `nix.yml` builds the flake outputs on main only.
 - Never start a local mutation run; mutation runs in CI only.
 - Version bumps: every change to a publishable package's packed output advances its version at least a patch.
 

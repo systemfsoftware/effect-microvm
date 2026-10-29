@@ -2,7 +2,7 @@ name: effect-microvm checks lane
 description: effect-microvm's steps for each phase of systemfsoftware's reusable-checks.yml
 inputs:
   lane:
-    description: plan, static, test, test-after, timings, gate or docs
+    description: plan, static, affected, test, test-after, timings, gate or docs
     required: true
   job:
     description: The test job from the plan, as JSON
@@ -16,22 +16,50 @@ runs:
   using: composite
   steps:
     - if: inputs.lane == 'plan' || inputs.lane == 'timings'
-      uses: systemfsoftware/systemfsoftware/.github/actions/sfs-tools@31963d5a6452b488b73f8d559c85e7104dd3b443
+      uses: systemfsoftware/systemfsoftware/.github/actions/sfs-tools@21dfc32e9927c87a31a37d19e5643445a4e398c3
       with:
         repository: systemfsoftware/systemfsoftware
-        ref: 31963d5a6452b488b73f8d559c85e7104dd3b443
-    # A pull request's plan asks turbo which test hashes changed, so it needs the workspace installed.
-    - if: inputs.lane == 'plan' && inputs.profile == 'local'
-      uses: systemfsoftware/systemfsoftware/.github/actions/install-deps@31963d5a6452b488b73f8d559c85e7104dd3b443
-    - if: inputs.lane == 'plan' && inputs.profile != 'local'
+        ref: 21dfc32e9927c87a31a37d19e5643445a4e398c3
+    - if: inputs.lane == 'plan'
       shell: bash -e {0}
       run: corepack enable
+
+    # Before the merge: the tests this change affects or touches, including any microVM integration file it touches.
+    - name: Affected lane environment
+      if: inputs.lane == 'affected'
+      shell: bash -e {0}
+      run: printf 'CI=true\nCONFORMANCE_PROFILE=local\nTURBO_LOG_ORDER=stream\n' >> "$GITHUB_ENV"
+    - uses: systemfsoftware/systemfsoftware/.github/actions/install-deps@21dfc32e9927c87a31a37d19e5643445a4e398c3
+      if: inputs.lane == 'affected'
+    - uses: systemfsoftware/systemfsoftware/.github/actions/grant-kvm@21dfc32e9927c87a31a37d19e5643445a4e398c3
+      if: inputs.lane == 'affected'
+    - name: Turbo cache
+      if: inputs.lane == 'affected'
+      uses: actions/cache@v6
+      with:
+        path: .turbo/cache
+        key: turbo-${{ runner.os }}-affected-${{ github.sha }}
+        restore-keys: |
+          turbo-${{ runner.os }}-affected-
+          turbo-${{ runner.os }}-checks-
+          turbo-${{ runner.os }}-
+    - name: The tests this change affects or touches
+      id: affected
+      if: inputs.lane == 'affected'
+      shell: bash -e {0}
+      run: node .github/ci/pr-tests.mjs plan
+    - name: Run them
+      if: inputs.lane == 'affected'
+      shell: bash -e {0}
+      env:
+        BASE: ${{ steps.affected.outputs.base }}
+      run: node .github/ci/pr-tests.mjs run
 
     - name: Static lane environment
       if: inputs.lane == 'static'
       shell: bash -e {0}
       run: printf 'CI=true\nOXLINT_FORMAT=github\nTSGO_FORMAT=github-actions\nTURBO_LOG_ORDER=stream\n' >> "$GITHUB_ENV"
-    - uses: systemfsoftware/systemfsoftware/.github/actions/install-deps@31963d5a6452b488b73f8d559c85e7104dd3b443
+    - uses: systemfsoftware/systemfsoftware/.github/actions/install-deps@21dfc32e9927c87a31a37d19e5643445a4e398c3
       if: inputs.lane == 'static'
     - uses: cachix/install-nix-action@v31
       if: inputs.lane == 'static' || inputs.lane == 'docs'
@@ -57,9 +85,9 @@ runs:
       if: inputs.lane == 'test' && inputs.profile == 'local'
       shell: bash -e {0}
       run: printf 'CONFORMANCE_PROFILE=local\n' >> "$GITHUB_ENV"
-    - uses: systemfsoftware/systemfsoftware/.github/actions/install-deps@31963d5a6452b488b73f8d559c85e7104dd3b443
+    - uses: systemfsoftware/systemfsoftware/.github/actions/install-deps@21dfc32e9927c87a31a37d19e5643445a4e398c3
       if: inputs.lane == 'test'
-    - uses: systemfsoftware/systemfsoftware/.github/actions/grant-kvm@31963d5a6452b488b73f8d559c85e7104dd3b443
+    - uses: systemfsoftware/systemfsoftware/.github/actions/grant-kvm@21dfc32e9927c87a31a37d19e5643445a4e398c3
       if: inputs.lane == 'test'
     - name: Turbo cache
       if: inputs.lane == 'test'
@@ -78,7 +106,7 @@ runs:
         FILTERS: ${{ fromJSON(inputs.job).filters }}
       run: corepack pnpm exec turbo run build --output-logs=errors-only --log-order=stream $FILTERS
 
-    # Heavy: the real-microVM integration suites run on main and in the merge queue, never on a pull request.
+    # Heavy: the whole real-microVM integration suites run on main, never before the merge.
     - name: microVM integration suites
       if: inputs.lane == 'test-after' && inputs.profile != 'local' && (fromJSON(inputs.job).shard == null || fromJSON(inputs.job).shard.index == 1)
       shell: bash -e {0}
