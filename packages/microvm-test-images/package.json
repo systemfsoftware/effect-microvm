@@ -15,8 +15,8 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/systemfsoftware/systemfsoftware.git",
+    "url": "git+https://github.com/systemfsoftware/effect-microvm.git",
     "directory": "packages/microvm-test-images"
   },
-  "homepage": "https://github.com/systemfsoftware/systemfsoftware/tree/main/packages/microvm-test-images#readme"
+  "homepage": "https://github.com/systemfsoftware/effect-microvm/tree/main/packages/microvm-test-images#readme"
 }
