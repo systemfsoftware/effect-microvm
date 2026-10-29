@@ -2,7 +2,7 @@ import { Conformance } from '@systemfsoftware/effect-daemon-conformance'
 import type { MicroVM } from '@systemfsoftware/effect-microsandbox'
 import type { Readiness } from '@systemfsoftware/effect-readiness'
 import { Effect, HashMap, Option, Queue, Ref, Stream } from 'effect'
-import type * as Crypto from 'effect/Crypto'
+import type * as SecureRandom from 'effect/crypto/SecureRandom'
 import type * as FileSystem from 'effect/FileSystem'
 import { declaration, port } from './micro-vm.medium.js'
 import type { MicroVMProgram } from './MicroVMProgram.js'
@@ -82,7 +82,7 @@ export const conformanceDriver = (
 ): Conformance.ConformanceDriver<
   MicroVMProgram,
   MicroVM.MicroVMError,
-  Crypto.Crypto | FileSystem.FileSystem | Readiness.HostProber
+  SecureRandom.SecureRandom | FileSystem.FileSystem | Readiness.HostProber
 > => ({
   name: 'microvm',
   declaration,

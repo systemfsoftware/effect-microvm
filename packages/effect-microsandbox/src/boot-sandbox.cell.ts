@@ -1,6 +1,6 @@
 import { Sandwich } from '@systemfsoftware/effect-cell-types'
 import { Effect } from 'effect'
-import * as Crypto from 'effect/Crypto'
+import * as SecureRandom from 'effect/crypto/SecureRandom'
 import type { Sandbox } from 'microsandbox'
 import { LoopbackViolationError, PortAllocationError, SandboxBootError } from './MicroVMError.schema.js'
 import type { MicroVMSpec } from './MicroVMSpec.schema.js'
@@ -35,8 +35,8 @@ const allocateBindings = (guests: ReadonlyArray<number>) =>
 
 const readPlanCommand = (spec: MicroVMSpec) =>
   Effect.gen(function*() {
-    const crypto = yield* Crypto.Crypto
-    const id = yield* crypto.randomUUIDv4().pipe(Effect.orDie)
+    const crypto = yield* SecureRandom.SecureRandom
+    const id = yield* crypto.uuidV4()
     return new PlanSandbox({
       spec,
       bindings: [],

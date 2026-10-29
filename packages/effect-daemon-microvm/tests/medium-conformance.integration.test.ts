@@ -1,3 +1,4 @@
+import * as NodeCrypto from '@effect/platform-node/NodeCrypto'
 import { layer as nodeServicesLayer } from '@effect/platform-node/NodeServices'
 import { Conformance } from '@systemfsoftware/effect-daemon-conformance'
 import { MicroVMMedium } from '@systemfsoftware/effect-daemon-microvm'
@@ -24,6 +25,7 @@ const MicroVMLayer = Layer.mergeAll(
   MicroVMMedium.layer(),
   Conformance.FiberReferenceLayer,
   nodeServicesLayer,
+  NodeCrypto.layerSecureRandom,
   Readiness.NodeHostProber.layer,
 )
 

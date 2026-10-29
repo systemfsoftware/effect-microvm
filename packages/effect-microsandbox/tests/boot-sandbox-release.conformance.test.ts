@@ -3,7 +3,8 @@ import { Conformance } from '@systemfsoftware/conformance-spec'
 import { Gherkin, Given, it, makeFeature, Then, When } from '@systemfsoftware/effect-gherkin-spec'
 import { MicroVM } from '@systemfsoftware/effect-microsandbox'
 import { Readiness } from '@systemfsoftware/effect-readiness'
-import { ConfigProvider, Crypto, Effect, Layer, Schema } from 'effect'
+import { ConfigProvider, Effect, Layer, Schema } from 'effect'
+import * as SecureRandom from 'effect/crypto/SecureRandom'
 import { nothingLeftHeld, recordingSandboxRuntime, SandboxLedger } from './__fixtures__/sandbox-runtime.fixture.js'
 
 const Feature = makeFeature({ it })
@@ -12,11 +13,8 @@ const twoPortService = MicroVM.spec('alpine:3.20').withExposedPorts([8080, 6379]
 
 const bootAgainstFakes = Layer.mergeAll(
   Layer.succeed(
-    Crypto.Crypto,
-    Crypto.make({
-      randomBytes: (size) => new Uint8Array(size),
-      digest: () => Effect.succeed(new Uint8Array()),
-    }),
+    SecureRandom.SecureRandom,
+    SecureRandom.make((size) => new Uint8Array(size)),
   ),
   Layer.succeed(Readiness.HostProber, {
     dial: () => Effect.succeed({ _tag: 'Connected' as const }),

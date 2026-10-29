@@ -1,9 +1,11 @@
 import { NodeRuntime } from '@effect/platform-node'
+import * as NodeCrypto from '@effect/platform-node/NodeCrypto'
 import { layer as nodeServicesLayer } from '@effect/platform-node/NodeServices'
 import { MicroVM } from '@systemfsoftware/effect-microsandbox'
 import { Readiness } from '@systemfsoftware/effect-readiness'
 import images from '@systemfsoftware/microvm-test-images' with { type: 'json' }
-import { Config, Crypto, Deferred, Effect, Fiber, Layer, Match, Random, Schema } from 'effect'
+import { Config, Deferred, Effect, Fiber, Layer, Match, Random, Schema } from 'effect'
+import * as SecureRandom from 'effect/crypto/SecureRandom'
 import type * as FileSystem from 'effect/FileSystem'
 import type * as Scope from 'effect/Scope'
 import { Sandbox } from 'microsandbox'
@@ -41,8 +43,8 @@ const recordGone = (name: string): Effect.Effect<boolean> =>
 const alpine = MicroVM.spec(images.alpine).withExposedPorts([8080])
 const portless = MicroVM.spec(images.alpine)
 
-const randomToken: Effect.Effect<string, never, Crypto.Crypto> = Effect.map(
-  Effect.flatMap(Crypto.Crypto, (crypto) => Effect.orDie(crypto.randomBytes(16))),
+const randomToken: Effect.Effect<string, never, SecureRandom.SecureRandom> = Effect.map(
+  Effect.flatMap(SecureRandom.SecureRandom, (random) => random.randomBytes(16)),
   (bytes) => Buffer.from(bytes).toString('hex'),
 )
 
@@ -160,7 +162,7 @@ const interruptBootAt = (
 ): Effect.Effect<
   void,
   never,
-  Crypto.Crypto | FileSystem.FileSystem | Readiness.HostProber
+  SecureRandom.SecureRandom | FileSystem.FileSystem | Readiness.HostProber
 > =>
   Effect.gen(function*() {
     yield* Effect.logInfo(`[smoke] J14: boot starting, interruption scheduled at ${point}ms`)
@@ -439,4 +441,6 @@ const main = Effect.gen(
   },
 )
 
-NodeRuntime.runMain(Effect.provide(main, Layer.merge(nodeServicesLayer, Readiness.NodeHostProber.layer)))
+NodeRuntime.runMain(
+  Effect.provide(main, Layer.mergeAll(nodeServicesLayer, NodeCrypto.layerSecureRandom, Readiness.NodeHostProber.layer)),
+)

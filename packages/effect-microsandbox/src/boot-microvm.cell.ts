@@ -1,7 +1,7 @@
 import { Cell } from '@systemfsoftware/effect-cell-types'
 import { Readiness } from '@systemfsoftware/effect-readiness'
 import { Match } from 'effect'
-import type * as Crypto from 'effect/Crypto'
+import type * as SecureRandom from 'effect/crypto/SecureRandom'
 import type * as FileSystem from 'effect/FileSystem'
 import type * as Scope from 'effect/Scope'
 import { awaitReadiness } from './await-readiness.cell.js'
@@ -24,7 +24,7 @@ type StartError =
   | VirtualizationUnsupportedError
   | WaitTimeoutError
 
-type StartServices = Crypto.Crypto | FileSystem.FileSystem | Readiness.HostProber | Scope.Scope
+type StartServices = SecureRandom.SecureRandom | FileSystem.FileSystem | Readiness.HostProber | Scope.Scope
 
 type BootedStart = Cell.Cell<MicroVMSpec, AcquiredVM, StartError, StartServices>
 
