@@ -96,10 +96,7 @@ const teardownOf = (mode: Supervisor.Medium.ShutdownMode) => (sandbox: MicroVM.R
 const WORKLOAD_OUTPUT = new TextDecoder()
 
 const writeChunkOf = (stdin: ExecSink, chunk: Uint8Array): Effect.Effect<boolean> =>
-  Effect.match(Effect.tryPromise({ try: () => stdin.write(chunk), catch: () => undefined }), {
-    onFailure: () => false,
-    onSuccess: () => true,
-  })
+  Effect.isSuccess(Effect.tryPromise({ try: () => stdin.write(chunk), catch: () => undefined }))
 
 const feedStdin = (stdin: ExecSink, bytes: Stream.Stream<Uint8Array>): Effect.Effect<void> =>
   Stream.runForEach(
