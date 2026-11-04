@@ -35,10 +35,7 @@ export class EscapeHatchDefect extends Schema.TaggedError<EscapeHatchDefect, { r
 const sandboxPrefix = 'effect-microsandbox-'
 
 const recordGone = (name: string): Effect.Effect<boolean> =>
-  Effect.match(
-    Effect.tryPromise({ try: () => Sandbox.get(name), catch: () => undefined }),
-    { onFailure: () => true, onSuccess: () => false },
-  )
+  Effect.isFailure(Effect.tryPromise({ try: () => Sandbox.get(name), catch: () => undefined }))
 
 const alpine = MicroVM.spec(images.alpine).withExposedPorts([8080])
 const portless = MicroVM.spec(images.alpine)
