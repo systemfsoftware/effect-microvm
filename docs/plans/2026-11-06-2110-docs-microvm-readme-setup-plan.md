@@ -174,16 +174,16 @@ flowchart TD
 
 ## Verification Contract
 
-| Evidence | Required result |
-|---|---|
-| Clean registry consumer | Each final published install/use command succeeds against the named released artifact, with captured output and exit. |
-| Clean source checkout | Every documented source/setup command succeeds at the candidate SHA, with Nix-built core tarballs and matching prerequisites recorded. |
-| README skill | Actual process, manual review, numeric score and scorer output are reported on the PR. |
-| Subtree | `subtrees.toml` validates and imported tree matches the resolved upstream vendor tree; retain commit and tree IDs. |
-| Scoped local checks | Run applicable dprint and touched-package lint, typecheck, and unit/property checks only; report exact commands and exits. Do not run local e2e, journey, integration/full gates, or mutation. |
-| Off-host full gate | Repository instructions name `pnpm check:local`; `package.json` defines `pnpm check:ci`. Keep the exact required full command pending off-host and report its actual execution and result; do not describe affected-only CI as that full command. |
-| Real VM | On a KVM-capable off-host runner, execute the applicable microsandbox smoke at the relevant SHA and capture `[smoke] all journeys green`, actual exit and job log. Verify daemon integration separately when claiming it. |
-| PR and main | Verify exact final PR head checks and the applicable main CI jobs and real microVM smoke at the actual merge SHA; read merged artifacts from that verified SHA. A descendant containing the merge is supplemental current-main evidence only, not a substitute for the merge-SHA run. |
+| Evidence                | Required result                                                                                                                                                                                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Clean registry consumer | Each final published install/use command succeeds against the named released artifact, with captured output and exit.                                                                                                                                                                 |
+| Clean source checkout   | Every documented source/setup command succeeds at the candidate SHA, with Nix-built core tarballs and matching prerequisites recorded.                                                                                                                                                |
+| README skill            | Actual process, manual review, numeric score and scorer output are reported on the PR.                                                                                                                                                                                                |
+| Subtree                 | `subtrees.toml` validates and imported tree matches the resolved upstream vendor tree; retain commit and tree IDs.                                                                                                                                                                    |
+| Scoped local checks     | Run applicable dprint and touched-package lint, typecheck, and unit/property checks only; report exact commands and exits. Do not run local e2e, journey, integration/full gates, or mutation.                                                                                        |
+| Off-host full gate      | Repository instructions name `pnpm check:local`; `package.json` defines `pnpm check:ci`. Keep the exact required full command pending off-host and report its actual execution and result; do not describe affected-only CI as that full command.                                     |
+| Real VM                 | On a KVM-capable off-host runner, execute the applicable microsandbox smoke at the relevant SHA and capture `[smoke] all journeys green`, actual exit and job log. Verify daemon integration separately when claiming it.                                                             |
+| PR and main             | Verify exact final PR head checks and the applicable main CI jobs and real microVM smoke at the actual merge SHA; read merged artifacts from that verified SHA. A descendant containing the merge is supplemental current-main evidence only, not a substitute for the merge-SHA run. |
 
 ---
 
