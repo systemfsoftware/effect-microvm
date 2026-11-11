@@ -10,17 +10,13 @@ Effect libraries for declaring microVM-backed workloads and supervising them wit
 | [`@systemfsoftware/effect-daemon-microvm`](packages/effect-daemon-microvm/) | Supervise workloads using a microVM medium.                     | `1.0.0`     | `1.0.3`       |
 | [`@systemfsoftware/microvm-test-images`](packages/microvm-test-images/)     | Share pinned OCI image references for this repository's checks. | Private     | `0.1.0`       |
 
-The npm and main versions above describe different artifacts. The main versions are not available as npm releases. Check the [npm microsandbox package](https://www.npmjs.com/package/@systemfsoftware/effect-microsandbox) and [npm daemon package](https://www.npmjs.com/package/@systemfsoftware/effect-daemon-microvm) for current releases.
+The npm and main versions above describe different artifacts: the npm column is the last release published to npm, and current packages come from the registry described in [Install](#install).
 
 ## Install
 
-In an empty consumer directory with npm and Bun installed, install the published packages with the Effect dependency versions used in the example:
+https://nix.systemfsoftware.com is the package registry for `@systemfsoftware` packages: a producer pushes its package tarballs there from `main`, a consumer substitutes them through its flake inputs, and nothing is published to npm.
 
-```bash
-npm install @systemfsoftware/effect-microsandbox@5.0.0 @systemfsoftware/effect-daemon-microvm@1.0.0 effect@4.0.5 @effect/platform-node@4.0.5 @effect/platform-node-shared@4.0.5
-```
-
-The pins matter for these releases: resolving Effect `4.1.2` caused the microsandbox import to fail because `effect/Crypto` was not found. The example below was run with Node `24.21.0`, npm `11.19.0`, and Bun `1.4.2` on Linux x64.
+Consume the packages through this repository's flake, pinned by `flake.lock`: `packages.<system>.workspace-tarballs` holds the tarball of each public package. The example below was run with Node `24.21.0` and Bun `1.4.2` on Linux x64.
 
 ## Usage
 
@@ -50,7 +46,7 @@ microVM exec: function
 daemon medium: function
 ```
 
-This constructs a specification and checks the package exports; it does **not** boot a microVM. Both the published `5.0.0` artifact and current main expose `MicroVM.exec`. The published microsandbox README shows `vm.exec`; use the artifact's exported API instead.
+This constructs a specification and checks the package exports; it does **not** boot a microVM. Both the npm `5.0.0` release and current main expose `MicroVM.exec`. The npm microsandbox README shows `vm.exec`; use the package's exported API instead.
 
 ## Running a microVM
 
