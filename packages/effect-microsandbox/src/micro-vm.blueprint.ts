@@ -13,6 +13,7 @@ import { JobExited, type JobExitStatus, JobSignaled } from './JobExitStatus.sche
 import type { MicroVMError } from './MicroVMError.schema.js'
 import {
   ExposedPort,
+  GuestFiles,
   GuestPort,
   HttpWait,
   ImageReference,
@@ -41,6 +42,7 @@ import {
 } from './running-vm.handle.js'
 export {
   ExposedPort,
+  GuestFiles,
   GuestPort,
   HttpWait,
   ImageReference,
@@ -102,85 +104,58 @@ const layerOf = (spec: MicroVMSpec) =>
 
 const reviseJob = (job: JobSpec, patch: Partial<Omit<JobSpec, '_tag'>>): JobSpec => ({ ...job, ...patch })
 
+const reviseService = (service: ServiceSpec, patch: Partial<Omit<ServiceSpec, '_tag'>>): ServiceSpec =>
+  ServiceSpec.make({ ...service, ...patch })
+
 const withEnvSpec = (spec: MicroVMSpec, env: Record<string, string>): MicroVMSpec =>
   Match.value(spec).pipe(
-    Match.tag('Service', (s) =>
-      ServiceSpec.make({
-        image: s.image,
-        env: { ...s.env, ...env },
-        ports: s.ports,
-        mounts: s.mounts,
-        memoryMb: s.memoryMb,
-        vCPUs: s.vCPUs,
-        waitStrategy: s.waitStrategy,
-      })),
+    Match.tag('Service', (s) => reviseService(s, { env: { ...s.env, ...env } })),
     Match.tag('Job', (j) => reviseJob(j, { env: { ...j.env, ...env } })),
     Match.exhaustive,
   )
 
 const withExposedPortsSpec = (spec: MicroVMSpec, ports: ReadonlyArray<number>): MicroVMSpec =>
   Match.value(spec).pipe(
-    Match.tag('Service', (s) =>
-      ServiceSpec.make({
-        image: s.image,
-        env: s.env,
-        ports,
-        mounts: s.mounts,
-        memoryMb: s.memoryMb,
-        vCPUs: s.vCPUs,
-        waitStrategy: s.waitStrategy,
-      })),
+    Match.tag('Service', (s) => reviseService(s, { ports })),
     Match.tag('Job', (j) => j),
     Match.exhaustive,
   )
 
 const withMountSpec = (spec: MicroVMSpec, mount: Mount): MicroVMSpec =>
   Match.value(spec).pipe(
-    Match.tag('Service', (s) =>
-      ServiceSpec.make({
-        image: s.image,
-        env: s.env,
-        ports: s.ports,
-        mounts: [...s.mounts, mount],
-        memoryMb: s.memoryMb,
-        vCPUs: s.vCPUs,
-        waitStrategy: s.waitStrategy,
-      })),
+    Match.tag('Service', (s) => reviseService(s, { mounts: [...s.mounts, mount] })),
     Match.tag('Job', (j) => reviseJob(j, { mounts: [...j.mounts, mount] })),
     Match.exhaustive,
   )
 
 const withMemoryLimitSpec = (spec: MicroVMSpec, memoryMb: number): MicroVMSpec =>
   Match.value(spec).pipe(
-    Match.tag('Service', (s) =>
-      ServiceSpec.make({
-        image: s.image,
-        env: s.env,
-        ports: s.ports,
-        mounts: s.mounts,
-        memoryMb,
-        vCPUs: s.vCPUs,
-        waitStrategy: s.waitStrategy,
-      })),
+    Match.tag('Service', (s) => reviseService(s, { memoryMb })),
     Match.tag('Job', (j) => reviseJob(j, { memoryMb })),
     Match.exhaustive,
   )
 
 const withWaitStrategySpec = (spec: MicroVMSpec, waitStrategy: WaitStrategy): MicroVMSpec =>
   Match.value(spec).pipe(
-    Match.tag('Service', (s) =>
-      ServiceSpec.make({
-        image: s.image,
-        env: s.env,
-        ports: s.ports,
-        mounts: s.mounts,
-        memoryMb: s.memoryMb,
-        vCPUs: s.vCPUs,
-        waitStrategy,
-      })),
+    Match.tag('Service', (s) => reviseService(s, { waitStrategy })),
     Match.tag('Job', (j) => j),
     Match.exhaustive,
   )
+
+const withCommandSpec = (spec: MicroVMSpec, cmd: readonly [string, ...Array<string>]): MicroVMSpec =>
+  Match.value(spec).pipe(
+    Match.tag('Service', (s) => reviseService(s, { cmd })),
+    Match.tag('Job', (j) => reviseJob(j, { cmd })),
+    Match.exhaustive,
+  )
+
+const withFilesSpec = (spec: MicroVMSpec, files: GuestFiles): MicroVMSpec =>
+  Match.value(spec).pipe(
+    Match.tag('Service', (s) => reviseService(s, { files: { ...s.files, ...files } })),
+    Match.tag('Job', (j) => reviseJob(j, { files: { ...j.files, ...files } })),
+    Match.exhaustive,
+  )
+
 const Services = Blueprint.make<MicroVMSpec>()(TypeId).steps({
   steps: {
     withEnv: withEnvSpec,
@@ -188,6 +163,8 @@ const Services = Blueprint.make<MicroVMSpec>()(TypeId).steps({
     withMount: withMountSpec,
     withMemoryLimit: withMemoryLimitSpec,
     withWaitStrategy: withWaitStrategySpec,
+    withCommand: withCommandSpec,
+    withFiles: withFilesSpec,
   },
   targets: { scoped: scopedOf, layer: layerOf },
 })
@@ -203,6 +180,8 @@ const Jobs = Blueprint.make<JobSpec>()(TypeId).steps({
     withMount: (spec: JobSpec, mount: Mount): JobSpec => reviseJob(spec, { mounts: [...spec.mounts, mount] }),
     withWaitStrategy: (spec: JobSpec, _strategy: WaitStrategy): JobSpec => spec,
     withWorkdir: (spec: JobSpec, path: string): JobSpec => reviseJob(spec, { workdir: path }),
+    withCommand: (spec: JobSpec, cmd: readonly [string, ...Array<string>]): JobSpec => reviseJob(spec, { cmd }),
+    withFiles: (spec: JobSpec, files: GuestFiles): JobSpec => reviseJob(spec, { files: { ...spec.files, ...files } }),
   },
   targets: { scoped: scopedOf, layer: layerOf, run: (spec: JobSpec) => runJob.run(spec) },
 })
@@ -219,6 +198,10 @@ export const withMount = Services.operations.withMount
 export const withMemoryLimit = Services.operations.withMemoryLimit
 
 export const withWaitStrategy = Services.operations.withWaitStrategy
+
+export const withCommand = Services.operations.withCommand
+
+export const withFiles = Services.operations.withFiles
 
 export const withHostAccess = Jobs.operations.withHostAccess
 
@@ -252,6 +235,8 @@ const applyAll = (self: MicroVMBlueprint): MicroVMBlueprint =>
     withMount({ host: '/tmp/a', guest: '/data' }),
     withExposedPorts([6379]),
     withEnv({ K: 'V' }),
+    withCommand(['server', '--serve']),
+    withFiles({ '/srv/app/config': 'a=b' }),
   )
 
 if (import.meta.vitest !== void 0) {
@@ -349,6 +334,68 @@ if (import.meta.vitest !== void 0) {
         Match.tag('Service', () => false),
         Match.exhaustive,
       )
+    },
+  )
+
+  const argv = Arbitrary.schema(Schema.NonEmptyArray(Schema.String))
+  const guestFiles = Arbitrary.schema(GuestFiles)
+  const cmdEq = Schema.toEquivalence(Schema.UndefinedOr(Schema.NonEmptyArray(Schema.String)))
+  const filesEq = Schema.toEquivalence(Schema.UndefinedOr(GuestFiles))
+  const keepsOthers = (self: MicroVMBlueprint): MicroVMBlueprint =>
+    self.pipe(
+      withWaitStrategy(Wait.forPort(8080)),
+      withMemoryLimit(512),
+      withMount({ host: '/tmp/a', guest: '/data' }),
+      withExposedPorts([6379]),
+      withEnv({ K: 'V' }),
+    )
+  const filesThenReplacements = Arbitrary.map(
+    Arbitrary.all([guestFiles, Arbitrary.schema(Schema.String)]),
+    ([first, replacement]) =>
+      [first, Object.fromEntries(Object.keys(first).map((path) => [path, replacement]))] as const,
+  )
+
+  it.prop(
+    '∀spec_Command_≡Drawn',
+    { of: [MicroVMSpec, argv], subject: withCommand },
+    (subject, [spec, cmd]) => cmdEq(subject(Services.of(spec), cmd).spec.cmd, cmd),
+  )
+
+  it.prop(
+    '∀spec_Command_=Idempotent',
+    { of: [MicroVMSpec, argv], subject: withCommand },
+    (subject, [spec, cmd]) =>
+      specEq(subject(subject(Services.of(spec), cmd), cmd).spec, subject(Services.of(spec), cmd).spec),
+  )
+
+  it.prop(
+    '∀spec_Files_⊨Drawn',
+    { of: [MicroVMSpec, guestFiles], subject: withFiles },
+    (subject, [spec, files]) => {
+      const next: GuestFiles = { ...subject(Services.of(spec), files).spec.files }
+      return Object.entries(files).every(([path, content]) => Object.is(next[path], content))
+    },
+  )
+
+  it.prop(
+    '∀spec_Files_≡LastWriteWins',
+    { of: [MicroVMSpec, filesThenReplacements], subject: withFiles },
+    (subject, [spec, [first, replaced]]) => {
+      const next: GuestFiles = { ...subject(subject(Services.of(spec), first), replaced).spec.files }
+      return Object.entries(replaced).every(([path, content]) => Object.is(next[path], content)) &&
+        specEq(
+          subject(subject(Services.of(spec), first), replaced).spec,
+          subject(Services.of(spec), { ...first, ...replaced }).spec,
+        )
+    },
+  )
+
+  it.prop(
+    '∀spec_Operations_⊨KeepCommandAndFiles',
+    { of: [MicroVMSpec], subject: keepsOthers },
+    (subject, [spec]) => {
+      const next = subject(Services.of(spec)).spec
+      return holdsAll([cmdEq(next.cmd, spec.cmd), filesEq(next.files, spec.files)])
     },
   )
 }

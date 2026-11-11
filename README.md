@@ -1,30 +1,78 @@
 # effect-microvm
 
-Effect libraries for declaring microVM-backed workloads and supervising them with a daemon. The repository contains the microsandbox binding, the daemon medium, and the image references used by their checks.
+Effect libraries for declaring microVM-backed workloads and supervising them. `effect-microsandbox` declares a microVM and runs it inside an Effect scope. `effect-daemon-microvm` runs microVM workloads as children of an [effect-daemon](https://github.com/systemfsoftware/effect-daemon) supervision tree.
 
 ## Packages
 
-| Package                                                                     | Purpose                                                         | npm release | Main manifest |
-| --------------------------------------------------------------------------- | --------------------------------------------------------------- | ----------- | ------------- |
-| [`@systemfsoftware/effect-microsandbox`](packages/effect-microsandbox/)     | Declare and run microVM workloads through Effect scopes.        | `5.0.0`     | `5.1.2`       |
-| [`@systemfsoftware/effect-daemon-microvm`](packages/effect-daemon-microvm/) | Supervise workloads using a microVM medium.                     | `1.0.0`     | `1.0.3`       |
-| [`@systemfsoftware/microvm-test-images`](packages/microvm-test-images/)     | Share pinned OCI image references for this repository's checks. | Private     | `0.1.0`       |
-
-The npm and main versions above describe different artifacts. The main versions are not available as npm releases. Check the [npm microsandbox package](https://www.npmjs.com/package/@systemfsoftware/effect-microsandbox) and [npm daemon package](https://www.npmjs.com/package/@systemfsoftware/effect-daemon-microvm) for current releases.
+| Package                                  | What it is                                                                                 |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `@systemfsoftware/effect-microsandbox`   | Declare microVM workloads and run them through Effect scopes, on the microsandbox runtime. |
+| `@systemfsoftware/effect-daemon-microvm` | A daemon medium that supervises workloads running in microVMs.                             |
 
 ## Install
 
-In an empty consumer directory with npm and Bun installed, install the published packages with the Effect dependency versions used in the example:
+`@systemfsoftware` packages are distributed as Nix tarballs from `nix.systemfsoftware.com`, not from npm, so do not run `npm install` or `pnpm add` for them. Take them through a flake. Third-party peers such as `effect` install from npm as usual.
 
-```bash
-npm install @systemfsoftware/effect-microsandbox@5.0.0 @systemfsoftware/effect-daemon-microvm@1.0.0 effect@4.0.5 @effect/platform-node@4.0.5 @effect/platform-node-shared@4.0.5
+Add the producer as a flake input in your project's `flake.nix`. Pin it to a full commit SHA or a release tag:
+
+```nix
+{
+  nixConfig = {
+    extra-substituters = "https://nix.systemfsoftware.com";
+    extra-trusted-public-keys = "nix-cache-1:wXA8I4DayNW9q6enUyQA/P/nT38pGSTLt374t3gsn7M=";
+    fallback = true;
+  };
+
+  inputs = {
+    nixpkgs.follows = "effect-microvm/nixpkgs";
+    effect-microvm.url = "github:systemfsoftware/effect-microvm/<rev>";
+    pnpm-release-management.url = "github:systemfsoftware/pnpm-release-management";
+  };
+
+  outputs = { self, nixpkgs, effect-microvm, pnpm-release-management }: {
+    packages = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (system:
+      let pkgs = nixpkgs.legacyPackages.${system}; in rec {
+        producer-tarballs = pnpm-release-management.lib.mkProducerTarballs {
+          inherit pkgs;
+          producers = { inherit effect-microvm; };
+        };
+        pnpm-store = pnpm-release-management.lib.mkPnpmConsumerStore {
+          inherit pkgs;
+          src = self;
+          files.".deps" = producer-tarballs;
+        };
+      });
+
+    devShells = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (system:
+      let pkgs = nixpkgs.legacyPackages.${system}; in {
+        default = pkgs.mkShell {
+          packages = [ pkgs.nodejs_24 pkgs.pnpm_12 ];
+          shellHook = self.packages.${system}.producer-tarballs.shellHook;
+        };
+      });
+  };
+}
 ```
 
-The pins matter for these releases: resolving Effect `4.1.2` caused the microsandbox import to fail because `effect/Crypto` was not found. The example below was run with Node `24.21.0`, npm `11.19.0`, and Bun `1.4.2` on Linux x64.
+Then, inside `nix develop`:
+
+```sh
+nix eval --raw .#producer-tarballs.overrides   # paste the output into pnpm-workspace.yaml
+pnpm add effect@^4.1.2
+```
+
+Declare the packages you use in `package.json` as tarballs in `.deps/`:
+
+```json
+"@systemfsoftware/effect-microsandbox": "file:.deps/effect-microsandbox.tgz",
+"@systemfsoftware/effect-daemon-microvm": "file:.deps/effect-daemon-microvm.tgz"
+```
+
+Add `.deps/` to `.gitignore`.
 
 ## Usage
 
-Save this as `example.mjs`:
+Save this as `example.mjs` in a project that installs both packages:
 
 ```js
 import { MicroVMMedium } from '@systemfsoftware/effect-daemon-microvm'
@@ -50,16 +98,20 @@ microVM exec: function
 daemon medium: function
 ```
 
-This constructs a specification and checks the package exports; it does **not** boot a microVM. Both the published `5.0.0` artifact and current main expose `MicroVM.exec`. The published microsandbox README shows `vm.exec`; use the artifact's exported API instead.
+This builds a specification and checks the exports. It does **not** boot a microVM.
 
 ## Running a microVM
 
-Running a guest requires hardware virtualization. On Linux, the process needs access to KVM. The repository's [smoke journey](packages/effect-microsandbox/examples/boot-alpine.ts) exercises guest execution, port mapping, and cleanup on a suitable host; the import example above is not evidence that those operations ran.
+Running a guest requires hardware virtualization. On Linux, the process needs access to KVM. The repository's [smoke journey](packages/effect-microsandbox/examples/boot-alpine.ts) exercises guest execution, port mapping and cleanup on a suitable host. The import example above is not evidence that those operations work on your machine.
 
-## Source and support
+## Support
 
-The [microsandbox source](packages/effect-microsandbox/src/) and [daemon medium source](packages/effect-daemon-microvm/src/MicroVMMedium/) describe the unreleased main implementation. Report problems in the [issue tracker](https://github.com/systemfsoftware/effect-microvm/issues).
+Report problems in the [issue tracker](https://github.com/systemfsoftware/effect-microvm/issues).
+
+## Contributing
+
+Development setup and checks are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-The packages declare Apache-2.0; see the [daemon package license](packages/effect-daemon-microvm/LICENSE).
+Apache-2.0. See [the daemon package's LICENSE](packages/effect-daemon-microvm/LICENSE).

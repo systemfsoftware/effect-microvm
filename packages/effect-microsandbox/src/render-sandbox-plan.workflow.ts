@@ -2,7 +2,7 @@ import { Workflow } from '@systemfsoftware/effect-cell-types'
 import { Match, Option, Schema } from 'effect'
 import * as Arr from 'effect/Array'
 import * as Result from 'effect/Result'
-import { GuestPort, MicroVMSpec } from './MicroVMSpec.schema.js'
+import { type GuestFiles, GuestPort, MicroVMSpec } from './MicroVMSpec.schema.js'
 import { PortBinding, SandboxPlan } from './render-sandbox-plan.schema.js'
 
 const PlanTypeId: unique symbol = Symbol.for('@systemfsoftware/effect-microsandbox/SandboxPlanDecision')
@@ -48,6 +48,22 @@ const networkProfilesOf = (hostAccess: boolean | undefined): ReadonlyArray<'publ
 
 const LOOPBACK_PREFIX = '127.'
 
+const ancestorsOf = (path: string): ReadonlyArray<string> =>
+  path.split('/').filter((segment) => segment !== '').slice(0, -1).map((_, index, segments) =>
+    `/${segments.slice(0, index + 1).join('/')}`
+  )
+
+const directoriesParentsFirst = (paths: ReadonlyArray<string>): ReadonlyArray<string> =>
+  Arr.dedupe(Arr.flatMap(paths, ancestorsOf))
+
+const guestContentOf = (files: GuestFiles | undefined) => {
+  const present: GuestFiles = { ...files }
+  return { files: present, directories: directoriesParentsFirst(Object.keys(present)) }
+}
+
+const cmdOf = (cmd: ReadonlyArray<string> | undefined): ReadonlyArray<string> | undefined =>
+  Option.getOrUndefined(Option.map(Option.fromNullishOr(cmd), (argv) => [...argv]))
+
 const isLoopback = (host: string): boolean => host.startsWith(LOOPBACK_PREFIX)
 
 const illegalBinding = (bindings: ReadonlyArray<PortBinding>): Option.Option<PortBinding> =>
@@ -70,6 +86,7 @@ const shapeOf = (command: PlanSandbox): SandboxPlan =>
       memoryMiB: job.memoryMb,
       workdir: job.workdir,
       cmd: [...job.cmd],
+      ...guestContentOf(job.files),
       mounts: job.mounts.map((mount) => ({ guest: mount.guest, host: mount.host })),
       portBindings: [],
       networkProfiles: networkProfilesOf(job.hostAccess),
@@ -81,7 +98,8 @@ const shapeOf = (command: PlanSandbox): SandboxPlan =>
       cpus: service.vCPUs,
       memoryMiB: service.memoryMb,
       workdir: undefined,
-      cmd: undefined,
+      cmd: cmdOf(service.cmd),
+      ...guestContentOf(service.files),
       mounts: service.mounts.map((mount) => ({ guest: mount.guest, host: mount.host })),
       portBindings: command.bindings.map((binding) => ({ ...binding })),
     })),

@@ -1,44 +1,35 @@
 {
   description = "Effect microVMs: the microsandbox binding, the daemon microVM medium, and the private microVM test images.";
 
-  inputs = {
-    # Core at a full commit. Core is public, so no fetch token is needed. Moving this pin is how the
-    # repository takes newer core packages: bump it, rebuild .#sfs-deps, update the overrides and the lockfile.
-    core.url = "github:systemfsoftware/systemfsoftware/31963d5a6452b488b73f8d559c85e7104dd3b443";
-    nixpkgs.follows = "core/nixpkgs";
-    pnpm-release-management.follows = "core/pnpm-release-management";
+  nixConfig = {
+    extra-substituters = "https://nix.systemfsoftware.com";
+    extra-trusted-public-keys = "nix-cache-1:wXA8I4DayNW9q6enUyQA/P/nT38pGSTLt374t3gsn7M=";
+    fallback = true;
   };
 
-  outputs = { self, nixpkgs, core, pnpm-release-management }:
+  inputs = {
+    # Producers at full commits. Core and effect-readiness push their tarballs to nix.systemfsoftware.com.
+    # effect-daemon does not push yet, so its two tarballs are built from source until it does.
+    # Moving a pin is how the repository takes newer packages: bump it, then run pnpm update '@systemfsoftware/*'.
+    core.url = "github:systemfsoftware/systemfsoftware/e1c7a5f4655d1705de502ebe0de3c1fa87e35591";
+    effect-readiness.url = "github:systemfsoftware/effect-readiness/9ee134541ae274aa0cd7d46a1d91847beaadd61b";
+    effect-daemon.url = "github:systemfsoftware/effect-daemon/558cb033935936ef21a6f4258ba462ed71a53b3a";
+    nixpkgs.follows = "core/nixpkgs";
+    pnpm-release-management.url = "github:systemfsoftware/pnpm-release-management";
+  };
+
+  outputs = { self, nixpkgs, core, effect-readiness, effect-daemon, pnpm-release-management }:
     let
       lib = nixpkgs.lib;
       systems = [ "x86_64-linux" "aarch64-linux" ];
       forEachSystem = fn: lib.genAttrs systems (system: fn nixpkgs.legacyPackages.${system});
 
-      # Every tarball pnpm-lock.yaml names under `file:.sfs-deps/`, by producer.
-      sfsPackages = {
-        core = [ "conformance-spec" "effect-cell-types" "effect-daemon-conformance" "effect-daemon-spec" "effect-gherkin-spec" "effect-readiness" "effect-schema-discovery" "effect-schema-law" "effect-schema-recursion-budget" "effect-schema-vite" "effect-sim-kernel" "effect-spec-runtime" "oxlint-config-cell-architecture" "oxlint-config-dmmf" "oxlint-config-recommended" "oxlint-config-rule-authoring" "oxlint-plugin-cell-architecture" "oxlint-plugin-dmmf-workflow" "oxlint-plugin-effect-platform" "oxlint-plugin-effect-schema" "oxlint-plugin-test-discipline" "stryker-config" "tsconfig" "tsdown-config" "vitest" "vitest-config" ];
-      };
-
-      producers = system: {
-        core = core.packages.${system};
-      };
-
-      # Each tarball is its producer's own per-package output, so a cold build makes only these.
-      sfsDepsOf = pkgs:
-        let
-          system = pkgs.stdenv.hostPlatform.system;
-          pick = producer: name:
-            let
-              upstream = (producers system).${producer};
-              member = lib.findFirst (member: member.attr == name)
-                (throw "flake.nix: ${producer} has no public workspace package named ${name}")
-                upstream.workspace-tarballs.members;
-            in
-            { name = member.tarball; path = upstream.${member.attr}; };
-        in
-        pkgs.linkFarm "sfs-deps"
-          (lib.concatLists (lib.mapAttrsToList (producer: names: map (pick producer) names) sfsPackages));
+      # Every @systemfsoftware tarball this repository's lockfile names, from the producer flakes.
+      producerTarballsOf = pkgs:
+        pnpm-release-management.lib.mkProducerTarballs {
+          inherit pkgs;
+          producers = { inherit core effect-readiness effect-daemon; };
+        };
 
       # This repository's own public packages, as tarballs downstream flakes consume the same way.
       workspaceOf = pkgs:
@@ -47,14 +38,14 @@
           src = self;
           pname = "effect-microvm";
           pnpm = pkgs.pnpm_12;
-          files.".sfs-deps" = sfsDepsOf pkgs;
+          files.".deps" = producerTarballsOf pkgs;
         };
     in
     {
       packages = forEachSystem (pkgs:
         let system = pkgs.stdenv.hostPlatform.system; in
         workspaceOf pkgs // {
-          sfs-deps = sfsDepsOf pkgs;
+          producer-tarballs = producerTarballsOf pkgs;
           inherit (core.packages.${system}) dprint;
         });
 
@@ -64,13 +55,12 @@
           src = self;
           pname = "effect-microvm";
           pnpm = pkgs.pnpm_12;
-          files.".sfs-deps" = sfsDepsOf pkgs;
+          files.".deps" = producerTarballsOf pkgs;
         };
       });
 
       devShells = forEachSystem (pkgs:
-        let system = pkgs.stdenv.hostPlatform.system; in
-        {
+        let system = pkgs.stdenv.hostPlatform.system; in {
           default = pkgs.mkShell {
             packages = [
               core.packages.${system}.dprint
@@ -80,12 +70,7 @@
               pnpm-release-management.packages.${system}.sandbox
             ];
             SANDBOX_PNPM_STORE = self.packages.${system}.pnpm-store;
-            shellHook = ''
-              sfs_deps="$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.sfs-deps"
-              rm -rf "$sfs_deps" && mkdir -p "$sfs_deps"
-              cp -L ${self.packages.${system}.sfs-deps}/*.tgz "$sfs_deps"/
-              chmod u+w "$sfs_deps"/*.tgz
-            '';
+            shellHook = self.packages.${system}.producer-tarballs.shellHook;
           };
         });
     };

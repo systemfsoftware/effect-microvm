@@ -1,5 +1,5 @@
 import { Schema } from 'effect'
-import { GuestPort } from './MicroVMSpec.schema.js'
+import { GuestFiles, GuestPort } from './MicroVMSpec.schema.js'
 
 export const PortBinding = Schema.Struct({
   guest: GuestPort,
@@ -18,6 +18,8 @@ export const SandboxPlan = Schema.Struct({
   memoryMiB: Schema.optional(Schema.Finite),
   workdir: Schema.optional(Schema.String),
   cmd: Schema.optional(Schema.Array(Schema.String)),
+  files: GuestFiles,
+  directories: Schema.Array(Schema.String),
   mounts: Schema.Array(Schema.Struct({ guest: Schema.String, host: Schema.String })),
   portBindings: Schema.Array(PortBinding),
   networkProfiles: Schema.optional(Schema.Array(NetworkProfile)),

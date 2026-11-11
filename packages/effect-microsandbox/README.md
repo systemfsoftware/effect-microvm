@@ -6,9 +6,7 @@ Built on the [`microsandbox`](https://github.com/superradcompany/microsandbox) n
 
 ## Quick Start
 
-```bash
-pnpm add @systemfsoftware/effect-microsandbox
-```
+Take `@systemfsoftware/effect-microsandbox` from the repository's flake, which pins its tarball in `flake.lock`; see the repository README's [Install](../../README.md#install) section.
 
 ```ts
 import { NodeRuntime } from '@effect/platform-node'
@@ -72,15 +70,31 @@ const RedisLive = Layer.provide(redis.layer, Readiness.NodeHostProber.layer)
 
 ### Spec Combinators
 
-| Combinator                 | Description                                               |
-| -------------------------- | --------------------------------------------------------- |
-| `.withEnv(env)`            | Merges environment variables                              |
-| `.withExposedPorts(ports)` | Replaces exposed guest ports (services only)              |
-| `.withMount(mount)`        | Appends a host bind mount                                 |
-| `.withMemoryLimit(mb)`     | Sets memory limit in MiB                                  |
-| `.withWaitStrategy(s)`     | Sets readiness wait strategy (services only)              |
-| `.withHostAccess(enabled)` | Lets a job reach host services (jobs only)                |
-| `.withWorkdir(path)`       | Sets the working directory of a job's command (jobs only) |
+| Combinator                 | Description                                                                         |
+| -------------------------- | ----------------------------------------------------------------------------------- |
+| `.withEnv(env)`            | Merges environment variables                                                        |
+| `.withExposedPorts(ports)` | Replaces exposed guest ports (services only)                                        |
+| `.withMount(mount)`        | Appends a host bind mount                                                           |
+| `.withMemoryLimit(mb)`     | Sets memory limit in MiB                                                            |
+| `.withWaitStrategy(s)`     | Sets readiness wait strategy (services only)                                        |
+| `.withHostAccess(enabled)` | Lets a job reach host services (jobs only)                                          |
+| `.withWorkdir(path)`       | Sets the working directory of a job's command (jobs only)                           |
+| `.withCommand(argv)`       | Sets the command a service starts after boot, or replaces a job's command           |
+| `.withFiles(files)`        | Merges files into the guest before it boots: guest path to a string or `Uint8Array` |
+
+### Running a Program the Image Lacks
+
+A service can run a script the image does not contain without mounting a host path. `.withFiles` writes files into the guest's root filesystem before the VM starts, and `.withCommand` starts the argv in the guest once it is up, before the readiness wait begins. Keys are absolute guest paths that name a file, not a directory, and a later `.withFiles` for the same path replaces the earlier content. The command runs as given: it does not go through the image's entrypoint.
+
+```ts
+const server = MicroVM.spec('oven/bun:1')
+  .withFiles({ '/opt/app/server.ts': 'Bun.serve({ port: 7000, fetch: () => new Response("ok") })' })
+  .withCommand(['bun', '/opt/app/server.ts'])
+  .withExposedPorts([7000])
+  .withWaitStrategy(MicroVM.Wait.forPort(7000))
+```
+
+A command that cannot be launched fails the boot with `ExecError`. A command that starts and then exits makes the readiness wait time out with `WaitTimeoutError`.
 
 ### Readiness Strategies
 
@@ -157,14 +171,14 @@ Exposed guest ports are automatically paired with unallocated ephemeral ports on
 
 All operational failures are returned as typed errors in the `MicroVMError.MicroVMError` union:
 
-| Error                            | Cause                                                                                              |
-| -------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `VirtualizationUnsupportedError` | Missing KVM (`/dev/kvm`), Hypervisor.framework, or WHP with specific diagnostic remediation        |
-| `SandboxBootError`               | Runtime failed to initialize or start the microVM sandbox                                          |
-| `PortAllocationError`            | Unable to bind a free host loopback port                                                           |
-| `LoopbackViolationError`         | Port mapping targeted a disallowed non-loopback address                                            |
-| `WaitTimeoutError`               | Readiness condition was not satisfied within the 30-second deadline                                |
-| `ExecError`                      | An in-guest command or a job's workload could not be started, or its result could not be collected |
+| Error                            | Cause                                                                                                                       |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `VirtualizationUnsupportedError` | Missing KVM (`/dev/kvm`), Hypervisor.framework, or WHP with specific diagnostic remediation                                 |
+| `SandboxBootError`               | Runtime failed to initialize or start the microVM sandbox                                                                   |
+| `PortAllocationError`            | Unable to bind a free host loopback port                                                                                    |
+| `LoopbackViolationError`         | Port mapping targeted a disallowed non-loopback address                                                                     |
+| `WaitTimeoutError`               | Readiness condition was not satisfied within the 30-second deadline                                                         |
+| `ExecError`                      | An in-guest command, a job's workload or a service's command could not be started, or a job's result could not be collected |
 
 ## Verification
 
@@ -184,7 +198,7 @@ To verify end-to-end integration on a host with virtualization support:
 pnpm --filter @systemfsoftware/effect-microsandbox smoke
 ```
 
-The smoke journey boots Alpine Linux, executes an in-guest command, tests port mapping, confirms resource cleanup on interruption, and exercises layer reuse across sequential VM runs. Its job journeys check exit codes, signals, byte-exact output, host access with and without opt-in, and the working directory. On a host without virtualization it exits non-zero with `VirtualizationUnsupportedError`.
+The smoke journey boots Alpine Linux, executes an in-guest command, tests port mapping, confirms resource cleanup on interruption, and exercises layer reuse across sequential VM runs. Its job journeys check exit codes, signals, byte-exact output, host access with and without opt-in, and the working directory. Its service journeys boot Bun with a script placed through `.withFiles` and started through `.withCommand`, wait for it on a port, and check that a command that cannot be launched fails the boot with `ExecError`. On a host without virtualization it exits non-zero with `VirtualizationUnsupportedError`.
 
 ## License
 

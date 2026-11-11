@@ -12,9 +12,9 @@ in-process fiber reference.
 
 ## Installation
 
-```bash
-pnpm add @systemfsoftware/effect-daemon-microvm @systemfsoftware/effect-daemon-spec
-```
+https://nix.systemfsoftware.com is the package registry for `@systemfsoftware` packages: a producer pushes its package tarballs there from `main`, a consumer substitutes them through its flake inputs, and nothing is published to npm.
+
+Take `@systemfsoftware/effect-daemon-microvm` from the repository's flake, which pins its tarballs in `flake.lock`; `@systemfsoftware/effect-daemon-spec` comes from the `effect-daemon` flake the same way. See the repository README's [Install](../../README.md#install) section.
 
 ## Quick start
 

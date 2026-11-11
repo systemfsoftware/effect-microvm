@@ -12,20 +12,16 @@ Extracted from `systemfsoftware/systemfsoftware` (core); package history came wi
 | `@systemfsoftware/effect-daemon-microvm` | 2.0.0   | yes          |
 | `@systemfsoftware/microvm-test-images`   | 0.1.0   | no (private) |
 
-Transitional: `effect-readiness`, `effect-daemon-spec` and `effect-daemon-conformance` still come from the core pin; once their own repositories ship tarballs, add those flakes as producers in `flake.nix`.
-
 ## Dependencies on core
 
-Core packages are not installed from a registry. `flake.nix` pins core at a full commit (input `core`) and
-`nix build .#sfs-deps` links the core tarballs this lockfile names. `pnpm-workspace.yaml` maps every core package
-(and its transitive core closure) to `file:.sfs-deps/<name>-<version>.tgz` through `overrides`; the moved manifests
-name ordinary semver ranges. To take newer core packages: bump the `core` input, update the override versions,
-rebuild `.sfs-deps`, run `pnpm install`.
+https://nix.systemfsoftware.com is the package registry for `@systemfsoftware` packages: a producer pushes its package tarballs there from `main`, a consumer substitutes them through its flake inputs, and nothing is published to npm.
+
+`flake.nix` pins core, `effect-readiness` and `effect-daemon` at full commits (inputs `core`, `effect-readiness` and `effect-daemon`). `lib.mkProducerTarballs` lays their tarballs under `.deps/`, and `pnpm-workspace.yaml` maps each package to `file:.deps/<name>.tgz` through `overrides`. `effect-daemon` does not push to the registry yet, so its two tarballs (`effect-daemon-spec` and `effect-daemon-conformance`) build from source on a cold setup until it does. To take newer packages: bump the input, regenerate the overrides with `nix eval --raw .#producer-tarballs.overrides`, then run `pnpm update '@systemfsoftware/*'`.
 
 Local setup:
 
 ```bash
-mkdir -p .sfs-deps && cp -L --no-preserve=mode "$(nix build --no-link --print-out-paths .#sfs-deps)"/*.tgz .sfs-deps/
+nix develop
 pnpm install
 ```
 

@@ -47,10 +47,18 @@ export const Mount = Schema.Struct({
 })
 export type Mount = typeof Mount.Type
 
+const GUEST_FILE_PATH_REGEXP = /^\/[\s\S]*[^/]$/
+
+const GuestFilePath = Schema.String.pipe(Schema.check(Schema.isPattern(GUEST_FILE_PATH_REGEXP)))
+
+export const GuestFiles = Schema.Record(GuestFilePath, Schema.Union([Schema.String, Schema.Uint8Array]))
+export type GuestFiles = typeof GuestFiles.Type
+
 export const BaseSpec = Schema.Struct({
   image: ImageReference,
   env: Schema.Record(Schema.String, Schema.String),
   mounts: Schema.Array(Mount).pipe(Schema.check(Schema.isUnique())),
+  files: Schema.optional(GuestFiles),
   memoryMb: Schema.optional(Schema.Finite.pipe(Schema.check(Schema.isGreaterThan(0)))),
   vCPUs: Schema.optional(Schema.Int.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(1)))),
 })
@@ -60,6 +68,7 @@ export const ServiceSpec = Schema.TaggedStruct('Service', {
   ...BaseSpec.fields,
   ports: Schema.Array(GuestPort).pipe(Schema.check(Schema.isUnique())),
   waitStrategy: Schema.optional(WaitStrategy),
+  cmd: Schema.optional(Schema.NonEmptyArray(Schema.String)),
 })
 export type ServiceSpec = typeof ServiceSpec.Type
 
