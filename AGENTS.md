@@ -6,11 +6,11 @@ Extracted from `systemfsoftware/systemfsoftware` (core); package history came wi
 
 ## Packages
 
-| Package                                  | Version | Distributed    |
-| ---------------------------------------- | ------- | -------------- |
-| `@systemfsoftware/effect-microsandbox`   | 5.1.2   | yes (registry) |
-| `@systemfsoftware/effect-daemon-microvm` | 1.0.3   | yes (registry) |
-| `@systemfsoftware/microvm-test-images`   | 0.1.0   | no (private)   |
+| Package                                  | Version | Distributed  |
+| ---------------------------------------- | ------- | ------------ |
+| `@systemfsoftware/effect-microsandbox`   | 6.0.0   | yes          |
+| `@systemfsoftware/effect-daemon-microvm` | 2.0.0   | yes          |
+| `@systemfsoftware/microvm-test-images`   | 0.1.0   | no (private) |
 
 ## Dependencies on core
 
@@ -24,6 +24,12 @@ Local setup:
 nix develop
 pnpm install
 ```
+
+## Release
+
+`release.jsonc` and `.github/workflows/release.yml` run pnpm-release-management's release flow: intents in `.changeset/`
+become a version PR, and merging it tags `<pkg>@vX.Y.Z` and creates GitHub Releases. The Version column is the version the manifest declares. A manifest at a version no tag covers is owed that tag ahead of any
+pending intent, and its GitHub Release reads that version's `CHANGELOG.md` section, so such a version needs its section written.
 
 ## Gate
 

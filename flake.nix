@@ -49,6 +49,16 @@
           inherit (core.packages.${system}) dprint;
         });
 
+      checks = forEachSystem (pkgs: {
+        consumer-store = pnpm-release-management.lib.mkPnpmConsumerStore {
+          inherit pkgs;
+          src = self;
+          pname = "effect-microvm";
+          pnpm = pkgs.pnpm_12;
+          files.".deps" = producerTarballsOf pkgs;
+        };
+      });
+
       devShells = forEachSystem (pkgs:
         let system = pkgs.stdenv.hostPlatform.system; in {
           default = pkgs.mkShell {
@@ -56,7 +66,10 @@
               core.packages.${system}.dprint
               pkgs.nodejs_24
               pkgs.pnpm_12
+              pnpm-release-management.packages.${system}.release-tools
+              pnpm-release-management.packages.${system}.sandbox
             ];
+            SANDBOX_PNPM_STORE = self.packages.${system}.pnpm-store;
             shellHook = self.packages.${system}.producer-tarballs.shellHook;
           };
         });
