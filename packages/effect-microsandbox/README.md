@@ -6,9 +6,7 @@ Built on the [`microsandbox`](https://github.com/superradcompany/microsandbox) n
 
 ## Quick Start
 
-```bash
-pnpm add @systemfsoftware/effect-microsandbox
-```
+Take `@systemfsoftware/effect-microsandbox` from the repository's flake, which pins its tarball in `flake.lock`; see the repository README's [Install](../../README.md#install) section.
 
 ```ts
 import { NodeRuntime } from '@effect/platform-node'
