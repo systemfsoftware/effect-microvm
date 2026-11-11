@@ -58,14 +58,35 @@
           inherit (core.packages.${system}) dprint;
         });
 
-      devShells = forEachSystem (pkgs: {
-        default = pkgs.mkShell {
-          packages = [
-            core.packages.${pkgs.stdenv.hostPlatform.system}.dprint
-            pkgs.nodejs_24
-            pkgs.pnpm_12
-          ];
+      checks = forEachSystem (pkgs: {
+        consumer-store = pnpm-release-management.lib.mkPnpmConsumerStore {
+          inherit pkgs;
+          src = self;
+          pname = "effect-microvm";
+          pnpm = pkgs.pnpm_12;
+          files.".sfs-deps" = sfsDepsOf pkgs;
         };
       });
+
+      devShells = forEachSystem (pkgs:
+        let system = pkgs.stdenv.hostPlatform.system; in
+        {
+          default = pkgs.mkShell {
+            packages = [
+              core.packages.${system}.dprint
+              pkgs.nodejs_24
+              pkgs.pnpm_12
+              pnpm-release-management.packages.${system}.release-tools
+              pnpm-release-management.packages.${system}.sandbox
+            ];
+            SANDBOX_PNPM_STORE = self.packages.${system}.pnpm-store;
+            shellHook = ''
+              sfs_deps="$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.sfs-deps"
+              rm -rf "$sfs_deps" && mkdir -p "$sfs_deps"
+              cp -L ${self.packages.${system}.sfs-deps}/*.tgz "$sfs_deps"/
+              chmod u+w "$sfs_deps"/*.tgz
+            '';
+          };
+        });
     };
 }
