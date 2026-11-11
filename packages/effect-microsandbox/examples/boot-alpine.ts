@@ -4,7 +4,7 @@ import { layer as nodeServicesLayer } from '@effect/platform-node/NodeServices'
 import { MicroVM } from '@systemfsoftware/effect-microsandbox'
 import { Readiness } from '@systemfsoftware/effect-readiness'
 import images from '@systemfsoftware/microvm-test-images' with { type: 'json' }
-import { Config, Deferred, Effect, Fiber, Layer, Match, Random, Schema } from 'effect'
+import { Config, Deferred, Effect, Fiber, Layer, Match, Random, Schedule, Schema } from 'effect'
 import * as SecureRandom from 'effect/crypto/SecureRandom'
 import type * as FileSystem from 'effect/FileSystem'
 import type * as Scope from 'effect/Scope'
@@ -22,6 +22,13 @@ export class HostListenerError extends Schema.TaggedError<HostListenerError, { r
 
 export class SandboxListingError extends Schema.TaggedError<SandboxListingError, { readonly brand: unique symbol }>()(
   'SandboxListingError',
+  {
+    cause: Schema.Unknown,
+  },
+) {}
+
+export class GuestFetchError extends Schema.TaggedError<GuestFetchError, { readonly brand: unique symbol }>()(
+  'GuestFetchError',
   {
     cause: Schema.Unknown,
   },
@@ -415,6 +422,66 @@ const j15 = Effect.scoped(
   }),
 )
 
+const BUN_SERVER_PORT = 7000
+
+const bunServerScript = `
+const payload = await Bun.file('/opt/smoke/payload.txt').text()
+Bun.serve({
+  port: ${BUN_SERVER_PORT},
+  hostname: '0.0.0.0',
+  fetch: () => new Response(process.env.SMOKE_VALUE + '|' + payload),
+})
+`
+
+const j16 = Effect.scoped(
+  Effect.gen(function*() {
+    yield* Effect.logInfo('[smoke] J16: a service runs a command over guest files, ready on a port wait, no host mount')
+    const envToken = yield* randomToken
+    const payloadToken = yield* randomToken
+    const vm = yield* MicroVM.spec(images.bun)
+      .withFiles({
+        '/opt/smoke/server.ts': bunServerScript,
+        '/opt/smoke/payload.txt': payloadToken,
+        '/opt/smoke/raw.bin': Uint8Array.of(0, 255, 1, 254),
+      })
+      .withEnv({ SMOKE_VALUE: envToken })
+      .withCommand(['bun', '/opt/smoke/server.ts'])
+      .withExposedPorts([BUN_SERVER_PORT])
+      .withWaitStrategy(MicroVM.Wait.forPort(BUN_SERVER_PORT))
+      .scoped
+    const url = yield* MicroVM.url(vm, BUN_SERVER_PORT, '/')
+    const bodyOnceGuestListens = yield* Effect.tryPromise({
+      try: () => fetch(url).then((response) => response.text()),
+      catch: (cause) => new GuestFetchError({ cause }),
+    }).pipe(Effect.retry({ schedule: Schedule.spaced('200 millis'), times: 50 }), Effect.orDie)
+    assert.equal(
+      bodyOnceGuestListens,
+      `${envToken}|${payloadToken}`,
+      'the guest must serve the placed script, its env and its file',
+    )
+    const raw = yield* MicroVM.exec(vm, 'od', ['-An', '-tu1', '/opt/smoke/raw.bin'])
+    assert.deepEqual(raw.stdout.trim().split(/\s+/), ['0', '255', '1', '254'], 'byte content must land unchanged')
+  }),
+)
+
+const j17 = Effect.scoped(
+  Effect.gen(function*() {
+    yield* Effect.logInfo('[smoke] J17: a service command that cannot be launched fails the boot with ExecError')
+    const refusal = yield* Effect.flip(
+      MicroVM.spec(images.bun)
+        .withCommand(['/does/not/exist'])
+        .withExposedPorts([BUN_SERVER_PORT])
+        .withWaitStrategy(MicroVM.Wait.forPort(BUN_SERVER_PORT))
+        .scoped,
+    )
+    const argv = Match.value(refusal).pipe(
+      Match.tag('ExecError', (error) => error.argv),
+      Match.orElse(() => assert.fail('expected an ExecError naming the command')),
+    )
+    assert.deepEqual(argv, ['/does/not/exist'])
+  }),
+)
+
 const main = Effect.gen(
   function*() {
     const j1Name = yield* j1
@@ -433,6 +500,8 @@ const main = Effect.gen(
     yield* j12
     yield* j14
     yield* j15
+    yield* j16
+    yield* j17
     yield* j13
     yield* Effect.logInfo('[smoke] all journeys green')
   },
