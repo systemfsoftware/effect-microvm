@@ -1,9 +1,14 @@
-import { Array, Context, Effect, Function, Option, pipe } from 'effect'
+import { Array, Context, Effect, Function, Match, Option, pipe, Predicate } from 'effect'
 import type { NetworkPolicy, Sandbox, SandboxBuilder } from 'microsandbox'
 import { SandboxBootError } from './MicroVMError.schema.js'
 import type { SandboxPlan } from './render-sandbox-plan.schema.js'
 
 type NapiMountBuilderT = { bind(host: string): NapiMountBuilderT }
+type NapiPatchBuilderT = {
+  mkdir(path: string): NapiPatchBuilderT
+  text(path: string, content: string): NapiPatchBuilderT
+  file(path: string, content: Buffer): NapiPatchBuilderT
+}
 type NapiNetworkBuilderT = { policy(policy: NetworkPolicy): NapiNetworkBuilderT }
 type NetworkPolicyFactory = {
   readonly fromProfiles: (profiles: Iterable<'public' | 'private' | 'host'>) => NetworkPolicy
@@ -39,6 +44,22 @@ const compilePlan: {
         Option.match(Option.fromNullishOr(plan.cmd), {
           onNone: () => b,
           onSome: (cmd) => b.cmd([...cmd]),
+        }),
+      (b) =>
+        Option.match(Option.liftPredicate(Object.entries(plan.files), Array.isReadonlyArrayNonEmpty), {
+          onNone: () => b,
+          onSome: (files) =>
+            b.patch((patch: NapiPatchBuilderT) =>
+              Array.reduce(
+                files,
+                Array.reduce(plan.directories, patch, (acc, directory) => acc.mkdir(directory)),
+                (acc, [path, content]) =>
+                  Match.value(content).pipe(
+                    Match.when(Predicate.isString, (text) => acc.text(path, text)),
+                    Match.orElse((bytes) => acc.file(path, Buffer.from(bytes))),
+                  ),
+              )
+            ),
         }),
       (b) =>
         Array.reduce(

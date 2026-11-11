@@ -19,7 +19,10 @@ The references point at `mirror.gcr.io`, Google's anonymous read-through cache o
 | Key      | Reference                                                                                                   | Recorded   |
 | -------- | ----------------------------------------------------------------------------------------------------------- | ---------- |
 | `alpine` | `mirror.gcr.io/library/alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc` | 2026-10-09 |
+| `bun`    | `mirror.gcr.io/oven/bun:1.4.4@sha256:1d22548f177f4ff38e0c15baa3c2c46c6c2060ba2d1bc573bb4720b407548f1d`      | 2026-11-11 |
 
-The digest is the OCI image index (`application/vnd.oci.image.index.v1+json`) that Docker Hub reported for `alpine:3.20` on 2026-09-24. On 2026-10-09, `HEAD /v2/library/alpine/manifests/3.20` on `mirror.gcr.io` returned the same `docker-content-digest`, and the digest resolved on its own.
+The `alpine` digest is the OCI image index (`application/vnd.oci.image.index.v1+json`) that Docker Hub reported for `alpine:3.20` on 2026-09-24. On 2026-10-09, `HEAD /v2/library/alpine/manifests/3.20` on `mirror.gcr.io` returned the same `docker-content-digest`, and the digest resolved on its own.
+
+The `bun` digest is the OCI image index that `HEAD /v2/oven/bun/manifests/1.4.4` returned on `mirror.gcr.io` and on Docker Hub on 2026-11-11, with the same `docker-content-digest` from both. The digest resolved on its own on `mirror.gcr.io`, and the index lists `linux/amd64` and `linux/arm64`.
 
 To move a pin, read the new digest with `HEAD https://mirror.gcr.io/v2/library/<name>/manifests/<tag>` and its `docker-content-digest` header, then edit `lib/images.json` and the table above.

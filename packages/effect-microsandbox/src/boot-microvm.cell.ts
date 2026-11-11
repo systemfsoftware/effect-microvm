@@ -8,6 +8,7 @@ import { awaitReadiness } from './await-readiness.cell.js'
 import { type AcquiredVM } from './boot-sandbox.cell.js'
 import { bootSandbox } from './boot-sandbox.cell.js'
 import type {
+  ExecError,
   LoopbackViolationError,
   PortAllocationError,
   SandboxBootError,
@@ -16,8 +17,10 @@ import type {
 } from './MicroVMError.schema.js'
 import type { MicroVMSpec } from './MicroVMSpec.schema.js'
 import { probeVirtualization } from './probe-virtualization.cell.js'
+import { startService } from './start-service.cell.js'
 
 type StartError =
+  | ExecError
   | LoopbackViolationError
   | PortAllocationError
   | SandboxBootError
@@ -38,7 +41,10 @@ export const bootMicroVM: BootedStart = probeVirtualization.pipe(
             Match.value(plan).pipe(
               Match.tag('LoopbackViolationError', (refusal): BootedStart => Cell.fail(refusal)),
               Match.orElse((vm): BootedStart =>
-                Cell.succeed<AcquiredVM, MicroVMSpec>(vm).pipe(Cell.andThen(awaitReadiness))
+                Cell.succeed<AcquiredVM, MicroVMSpec>(vm).pipe(
+                  Cell.andThen(startService),
+                  Cell.andThen(awaitReadiness),
+                )
               ),
             )
           ),

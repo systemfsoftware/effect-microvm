@@ -1,6 +1,7 @@
 import { it } from '@systemfsoftware/vitest'
 import { Match, Option, Schema } from 'effect'
 import * as Arbitrary from 'effect/Arbitrary'
+import * as Arr from 'effect/Array'
 import * as Result from 'effect/Result'
 import { GuestPort, JobSpec, MicroVMSpec, ServiceSpec } from '../MicroVMSpec.schema.js'
 import { PortBinding, SandboxPlan } from '../render-sandbox-plan.schema.js'
@@ -107,10 +108,10 @@ it.prop(
     planLaw(subject, command, (plan) => {
       const allLoopback = plan.portBindings.every((b) => isLoopbackHost(b.host))
       const roleCorrect = Match.value(command.spec).pipe(
-        Match.tag('Service', () =>
+        Match.tag('Service', (service) =>
           holds([
             plan.portBindings.length === command.bindings.length,
-            plan.cmd === undefined,
+            cmdEchoes(plan, service.cmd),
             plan.workdir === undefined,
           ])),
         Match.tag('Job', (job) =>
@@ -217,22 +218,6 @@ const serviceCase = Arbitrary.map(
     new PlanSandbox({ spec: service, bindings, name: `sandbox-${pid}-${suffix}` }),
 )
 
-const preChangeServiceArm = (
-  name: string,
-  service: ServiceSpec,
-  bindings: ReadonlyArray<PortBinding>,
-): SandboxPlan => ({
-  name,
-  image: service.image,
-  envs: { ...service.env },
-  cpus: service.vCPUs,
-  memoryMiB: service.memoryMb,
-  workdir: undefined,
-  cmd: undefined,
-  mounts: service.mounts.map((mount) => ({ guest: mount.guest, host: mount.host })),
-  portBindings: bindings.map((binding) => ({ ...binding })),
-})
-
 it.prop(
   '∀noOptIn_Render_=NoProfiles',
   { of: [noOptInCase], subject: renderSandboxPlan },
@@ -270,17 +255,62 @@ it.prop(
 )
 
 it.prop(
-  '∀serviceSpec_Render_=PreChangeServiceArm',
+  '∀serviceSpec_Render_=ServiceShape',
   { of: [serviceCase], subject: renderSandboxPlan },
   (subject, [command]) =>
     planLaw(subject, command, (plan) =>
       Match.value(command.spec).pipe(
-        Match.tag('Service', (service) =>
-          holds([
-            Schema.toEquivalence(SandboxPlan)(plan, preChangeServiceArm(command.name, service, command.bindings)),
-            !('networkProfiles' in plan),
-          ])),
+        Match.tag(
+          'Service',
+          (service) => holds([cmdEchoes(plan, service.cmd), plan.workdir === undefined, !('networkProfiles' in plan)]),
+        ),
         Match.tag('Job', () => false),
         Match.exhaustive,
       )),
+)
+
+it.prop(
+  '∀spec_Render_≡Files',
+  { of: [successCase], subject: renderSandboxPlan },
+  (subject, [command]) =>
+    planLaw(
+      subject,
+      command,
+      (plan) => Schema.toEquivalence(SandboxPlan.fields.files)(plan.files, { ...command.spec.files }),
+    ),
+)
+
+const pathSegment = Arbitrary.schema(Schema.String.pipe(Schema.check(Schema.isPattern(/^[a-z]{1,6}$/))))
+const directorySegments = Arbitrary.array(pathSegment, { minLength: 1, maxLength: 3 })
+
+const chainOf = (segments: ReadonlyArray<string>): ReadonlyArray<string> =>
+  Arr.drop(Arr.scan(segments, '', (parent, segment) => `${parent}/${segment}`), 1)
+
+const serviceWithFiles = (files: Record<string, string>): PlanSandbox =>
+  new PlanSandbox({
+    spec: ServiceSpec.make({ image: 'alpine:3.20', env: {}, mounts: [], ports: [], files }),
+    bindings: [],
+    name: 'sandbox-files',
+  })
+
+it.prop(
+  '∀directories_Render_≡ParentChain',
+  { of: [directorySegments, pathSegment], subject: renderSandboxPlan },
+  (subject, [segments, name]) =>
+    planLaw(
+      subject,
+      serviceWithFiles({ [`/${segments.join('/')}/${name}`]: '' }),
+      (plan) => plan.directories.join('\n') === chainOf(segments).join('\n'),
+    ),
+)
+
+it.prop(
+  '∀directories_Render_=SharedDirectoryOnce',
+  { of: [directorySegments, pathSegment, pathSegment], subject: renderSandboxPlan },
+  (subject, [segments, first, second]) =>
+    planLaw(
+      subject,
+      serviceWithFiles({ [`/${segments.join('/')}/${first}`]: '', [`/${segments.join('/')}/${second}`]: 'x' }),
+      (plan) => plan.directories.join('\n') === chainOf(segments).join('\n'),
+    ),
 )
