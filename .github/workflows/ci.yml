@@ -1,53 +1,35 @@
 name: CI
 
-# Fast checks on the pull request, the full suite in the merge queue. A pull request runs the static lane, the
-# `affected` lane (.github/ci/pr-tests.mjs) and no packed test job (.github/ci/no-tests-before-merge.mjs). A Mergify
-# queue draft (head `mergify/merge-queue/*`) and main run the static lane and every package's whole suite in the packed
-# test jobs. Mergify builds its drafts as pull requests, so there is no merge_group trigger.
-# The smoke journeys (real microVM) run on main and on demand, with KVM granted, never on a pull request.
+# One job per pull request. A pull request runs `pnpm check:static`; a Mergify queue draft (head ref
+# `mergify/merge-queue/*`) and a push to main run `pnpm check:ci`, the static checks plus the whole test suite, with
+# KVM granted because the suites boot microVMs.
+# Mergify builds its drafts as pull requests, so there is no merge_group trigger. The squash-message lint
+# and the change-intent check are steps of the same job. A newer push to a pull request cancels its older run.
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
-# Every commit on main gets its own run and verdict; on any other ref a newer push cancels the superseded run.
-concurrency:
-  group: ci-${{ github.ref == 'refs/heads/main' && github.sha || github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 permissions:
   contents: read
 
 jobs:
-  conflicts:
-    name: no merge conflicts
-    uses: systemfsoftware/systemfsoftware/.github/workflows/conflict-check.yml@15b4d2ab1e2af0a154fad2b9af7bd1f6449b3606
-    with:
-      base_ref: ${{ github.event.pull_request.base.ref }}
-      head_sha: ${{ github.event.pull_request.head.sha }}
   checks:
-    name: build · lint · typecheck · test
-    needs: conflicts
-    permissions:
-      contents: read
-      actions: read
-    uses: systemfsoftware/systemfsoftware/.github/workflows/reusable-checks.yml@15b4d2ab1e2af0a154fad2b9af7bd1f6449b3606
+    uses: systemfsoftware/systemfsoftware/.github/workflows/reusable-ci.yml@f271b208fd10c56d27380de6bc43f54b9c7ee2a5
     with:
-      profile: ${{ (github.ref == 'refs/heads/main' || startsWith(github.head_ref, 'mergify/merge-queue/')) && 'per-change' || 'local' }}
-      record: test-timings-${{ (github.ref == 'refs/heads/main' || startsWith(github.head_ref, 'mergify/merge-queue/')) && 'per-change' || 'local' }}
-      timings: ${{ (github.ref == 'refs/heads/main' || startsWith(github.head_ref, 'mergify/merge-queue/')) && 'test-timings' || 'node .github/ci/no-tests-before-merge.mjs' }}
-      node-options: --max-old-space-size=4096
-      pnpm: corepack pnpm
-      test-flags: --output-logs=new-only --log-order=stream --log-prefix=none
-      gate-name: the gate (pnpm check:ci)
-      lanes: >-
-        ${{ (github.ref == 'refs/heads/main' || startsWith(github.head_ref, 'mergify/merge-queue/'))
-        && '[{"id": "static", "name": "static checks (pnpm check:static)", "timeout-minutes": 45, "node-options": "--max-old-space-size=4096", "run": "corepack pnpm check:static", "docs-run": "./bin/dprint check"}]'
-        || '[{"id": "static", "name": "static checks (pnpm check:static)", "timeout-minutes": 45, "node-options": "--max-old-space-size=4096", "run": "corepack pnpm check:static", "docs-run": "./bin/dprint check"}, {"id": "affected", "name": "affected tests (turbo --affected, vitest --changed)", "timeout-minutes": 30, "fetch-depth": 2, "node-options": "--max-old-space-size=4096"}]' }}
+      commitlint: true
+      changeset: true
+      fast: pnpm check:static
+      full: |
+        echo 'KERNEL=="kvm", MODE="0666"' | sudo tee /etc/udev/rules.d/99-kvm.rules > /dev/null
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger
+        pnpm check:ci
+
   smoke:
     # Heavy: the real-microVM journeys run on main and on demand, never before the merge.
     name: smoke · effect-microsandbox journeys (real microVM)
-    needs: conflicts
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -60,12 +42,14 @@ jobs:
           extra_nix_config: |
             extra-substituters = https://nix.systemfsoftware.com
             extra-trusted-public-keys = nix-cache-1:wXA8I4DayNW9q6enUyQA/P/nT38pGSTLt374t3gsn7M=
-      - name: Producer tarballs
-        run: nix develop --command true
-      - uses: systemfsoftware/systemfsoftware/.github/actions/install-deps@15b4d2ab1e2af0a154fad2b9af7bd1f6449b3606
-      - uses: systemfsoftware/systemfsoftware/.github/actions/grant-kvm@15b4d2ab1e2af0a154fad2b9af7bd1f6449b3606
+      - name: Grant KVM access
+        run: |
+          echo 'KERNEL=="kvm", MODE="0666"' | sudo tee /etc/udev/rules.d/99-kvm.rules > /dev/null
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger
       - name: Smoke journeys
         run: |
-          set -o pipefail
-          corepack pnpm --filter @systemfsoftware/effect-microsandbox smoke 2>&1 | tee /tmp/smoke.log
-          grep -q 'all journeys green' /tmp/smoke.log
+          nix develop --command bash -euo pipefail -c '
+            pnpm install --frozen-lockfile
+            pnpm --filter @systemfsoftware/effect-microsandbox smoke 2>&1 | tee /tmp/smoke.log
+            grep -q "all journeys green" /tmp/smoke.log'

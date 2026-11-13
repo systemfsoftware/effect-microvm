@@ -35,12 +35,10 @@ pending intent, and its GitHub Release reads that version's `CHANGELOG.md` secti
 
 - `pnpm check:local` before delivery: dprint, build, lint, typecheck, type tests, API reports, attw, tests at the
   local conformance profile.
-- CI (`.github/workflows/ci.yml`) calls core's reusable checks at a pinned core commit. A pull request runs
-  the static lane and the affected tests (`.github/ci/pr-tests.mjs`: `turbo --affected`, `vitest --changed`, plus any
-  `test:integration` file it touches) and no packed test job. A Mergify queue draft (`mergify/merge-queue/*`) runs the
-  full suite: the static lane and every package's whole suite. Main runs the full suite again after each merge, and a
-  package whose content hash already passed whole is a cache hit, not left out by name. On main, effect-daemon-microvm's
-  `test:integration` and the effect-microsandbox smoke journeys also run, with KVM granted. `nix.yml` builds the flake
+- CI (`.github/workflows/ci.yml`) is one `checks` job from the shared reusable workflow at a pinned commit. A pull
+  request runs `pnpm check:static`. A Mergify queue draft (`mergify/merge-queue/*`) and main run `pnpm check:ci`, the
+  static checks plus every package's whole suite, with KVM granted. The squash-message lint and the change-intent check
+  are steps of the same job. On main, the effect-microsandbox smoke journeys also run. `nix.yml` builds the flake
   outputs on main only.
 - Never start a local mutation run; mutation runs in CI only.
 - Version bumps: every change to a publishable package's packed output advances its version at least a patch.
