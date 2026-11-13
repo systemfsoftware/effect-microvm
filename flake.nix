@@ -11,11 +11,11 @@
     # Producers at full commits. Core and effect-readiness push their tarballs to nix.systemfsoftware.com.
     # effect-daemon does not push yet, so its two tarballs are built from source until it does.
     # Moving a pin is how the repository takes newer packages: bump it, then run pnpm update '@systemfsoftware/*'.
-    core.url = "github:systemfsoftware/systemfsoftware/3ef6c21c36f19a539078b6817b495df3039cc163";
-    effect-readiness.url = "github:systemfsoftware/effect-readiness/9ee134541ae274aa0cd7d46a1d91847beaadd61b";
-    effect-daemon.url = "github:systemfsoftware/effect-daemon/558cb033935936ef21a6f4258ba462ed71a53b3a";
+    core.url = "github:systemfsoftware/systemfsoftware/15b4d2ab1e2af0a154fad2b9af7bd1f6449b3606";
+    effect-readiness.url = "github:systemfsoftware/effect-readiness/778548d74f6e679c86ae03dbb05b484435ce0775";
+    effect-daemon.url = "github:systemfsoftware/effect-daemon/4df421a957abb9e0ae5eee36cf6ffbff3a208f45";
     nixpkgs.follows = "core/nixpkgs";
-    pnpm-release-management.url = "github:systemfsoftware/pnpm-release-management";
+    pnpm-release-management.url = "github:systemfsoftware/pnpm-release-management/43f24b21b3c475acd03eb576bba6cf48d7ca8e2f";
   };
 
   outputs = { self, nixpkgs, core, effect-readiness, effect-daemon, pnpm-release-management }:

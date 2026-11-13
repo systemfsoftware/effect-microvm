@@ -21,7 +21,7 @@ permissions:
 jobs:
   conflicts:
     name: no merge conflicts
-    uses: systemfsoftware/systemfsoftware/.github/workflows/conflict-check.yml@b146694efe1139948c03bd9e9e366c725252c0d1
+    uses: systemfsoftware/systemfsoftware/.github/workflows/conflict-check.yml@15b4d2ab1e2af0a154fad2b9af7bd1f6449b3606
     with:
       base_ref: ${{ github.event.pull_request.base.ref }}
       head_sha: ${{ github.event.pull_request.head.sha }}
@@ -31,7 +31,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: systemfsoftware/systemfsoftware/.github/workflows/reusable-checks.yml@b146694efe1139948c03bd9e9e366c725252c0d1
+    uses: systemfsoftware/systemfsoftware/.github/workflows/reusable-checks.yml@15b4d2ab1e2af0a154fad2b9af7bd1f6449b3606
     with:
       profile: ${{ (github.ref == 'refs/heads/main' || startsWith(github.head_ref, 'mergify/merge-queue/')) && 'per-change' || 'local' }}
       record: test-timings-${{ (github.ref == 'refs/heads/main' || startsWith(github.head_ref, 'mergify/merge-queue/')) && 'per-change' || 'local' }}
@@ -62,8 +62,8 @@ jobs:
             extra-trusted-public-keys = nix-cache-1:wXA8I4DayNW9q6enUyQA/P/nT38pGSTLt374t3gsn7M=
       - name: Producer tarballs
         run: nix develop --command true
-      - uses: systemfsoftware/systemfsoftware/.github/actions/install-deps@b146694efe1139948c03bd9e9e366c725252c0d1
-      - uses: systemfsoftware/systemfsoftware/.github/actions/grant-kvm@b146694efe1139948c03bd9e9e366c725252c0d1
+      - uses: systemfsoftware/systemfsoftware/.github/actions/install-deps@15b4d2ab1e2af0a154fad2b9af7bd1f6449b3606
+      - uses: systemfsoftware/systemfsoftware/.github/actions/grant-kvm@15b4d2ab1e2af0a154fad2b9af7bd1f6449b3606
       - name: Smoke journeys
         run: |
           set -o pipefail

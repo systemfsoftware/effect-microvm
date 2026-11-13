@@ -9,4 +9,4 @@ permissions:
 jobs:
   commitlint:
     name: commitlint
-    uses: systemfsoftware/systemfsoftware/.github/workflows/reusable-commitlint.yml@d4aca35674f015b33748891e6378b33a055d1234
+    uses: systemfsoftware/systemfsoftware/.github/workflows/reusable-commitlint.yml@15b4d2ab1e2af0a154fad2b9af7bd1f6449b3606
