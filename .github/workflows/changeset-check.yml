@@ -10,6 +10,6 @@ permissions:
 
 jobs:
   check:
-    uses: systemfsoftware/pnpm-release-management/.github/workflows/changeset-check.yml@b9b4a1d48cc16241b33f9afd8ab99b82b05ce04f
+    uses: systemfsoftware/pnpm-release-management/.github/workflows/changeset-check.yml@43f24b21b3c475acd03eb576bba6cf48d7ca8e2f
     with:
       devshell: true
