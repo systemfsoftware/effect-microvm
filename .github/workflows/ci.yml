@@ -20,7 +20,11 @@ jobs:
     with:
       commitlint: true
       changeset: true
-      fast: pnpm check:static
+      fast: |
+        s=0; ./bin/dprint check || s=1
+        export TURBO_SCM_BASE="$BASE" TURBO_SCM_HEAD="$HEAD"
+        pnpm exec turbo run --concurrency=${TURBO_CONCURRENCY:-50%} --continue build lint typecheck test:types api:check attw --affected || s=1
+        exit $s
       full: |
         echo 'KERNEL=="kvm", MODE="0666"' | sudo tee /etc/udev/rules.d/99-kvm.rules > /dev/null
         sudo udevadm control --reload-rules
