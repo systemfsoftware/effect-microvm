@@ -35,7 +35,7 @@ pending intent, and its GitHub Release reads that version's `CHANGELOG.md` secti
 
 - `pnpm check:local` before delivery: dprint, build, lint, typecheck, type tests, API reports, attw, tests at the
   local conformance profile.
-- CI (`.github/workflows/ci.yml`, SYS-1369) calls core's reusable checks at a pinned core commit. A pull request runs
+- CI (`.github/workflows/ci.yml`) calls core's reusable checks at a pinned core commit. A pull request runs
   the static lane and the affected tests (`.github/ci/pr-tests.mjs`: `turbo --affected`, `vitest --changed`, plus any
   `test:integration` file it touches) and no packed test job. A Mergify queue draft (`mergify/merge-queue/*`) runs the
   full suite: the static lane and every package's whole suite. Main runs the full suite again after each merge, and a
