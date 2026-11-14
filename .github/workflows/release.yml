@@ -21,7 +21,7 @@ permissions:
 jobs:
   release:
     if: github.ref == 'refs/heads/main'
-    uses: systemfsoftware/pnpm-release-management/.github/workflows/release.yml@7c976f10f0233a671caa340c5b20f9c2acaab433
+    uses: systemfsoftware/pnpm-release-management/.github/workflows/release.yml@73f69814f58463631fc0f13ac3c27ce85a935a8c
     with:
       ci-workflow: ci.yml
   noop:
