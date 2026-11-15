@@ -1,5 +1,9 @@
 # @systemfsoftware/effect-microsandbox
 
+## 6.1.1
+
+Depends on `@systemfsoftware` packages through caret ranges on versions published to npm, so the package installs from the npm registry.
+
 ## 6.1.0
 
 Requires Effect ^4.1.2. Released as 6.0.0 and 2.0.0; their changelogs carry the entry.
