@@ -11,63 +11,11 @@ Effect libraries for declaring microVM-backed workloads and supervising them. `e
 
 ## Install
 
-`@systemfsoftware` packages are distributed as Nix tarballs from `nix.systemfsoftware.com`, not from npm, so do not run `npm install` or `pnpm add` for them. Take them through a flake. Third-party peers such as `effect` install from npm as usual.
-
-Add the producer as a flake input in your project's `flake.nix`. Pin it to a full commit SHA or a release tag:
-
-```nix
-{
-  nixConfig = {
-    extra-substituters = "https://nix.systemfsoftware.com";
-    extra-trusted-public-keys = "nix-cache-1:wXA8I4DayNW9q6enUyQA/P/nT38pGSTLt374t3gsn7M=";
-  };
-
-  inputs = {
-    nixpkgs.follows = "effect-microvm/nixpkgs";
-    effect-microvm.url = "github:systemfsoftware/effect-microvm/<rev>";
-    pnpm-release-management.url = "github:systemfsoftware/pnpm-release-management";
-  };
-
-  outputs = { self, nixpkgs, effect-microvm, pnpm-release-management }: {
-    packages = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (system:
-      let pkgs = nixpkgs.legacyPackages.${system}; in rec {
-        producer-tarballs = pnpm-release-management.lib.mkProducerTarballs {
-          inherit pkgs;
-          producers = { inherit effect-microvm; };
-        };
-        pnpm-store = pnpm-release-management.lib.mkPnpmConsumerStore {
-          inherit pkgs;
-          src = self;
-          files.".deps" = producer-tarballs;
-        };
-      });
-
-    devShells = nixpkgs.lib.genAttrs [ "x86_64-linux" "aarch64-linux" ] (system:
-      let pkgs = nixpkgs.legacyPackages.${system}; in {
-        default = pkgs.mkShell {
-          packages = [ pkgs.nodejs_24 pkgs.pnpm_12 ];
-          shellHook = self.packages.${system}.producer-tarballs.shellHook;
-        };
-      });
-  };
-}
-```
-
-Then, inside `nix develop`:
-
 ```sh
-nix eval --raw .#producer-tarballs.overrides   # paste the output into pnpm-workspace.yaml
-pnpm add effect@^4.1.2
+pnpm add @systemfsoftware/effect-microsandbox @systemfsoftware/effect-daemon-microvm effect@^4.1.2 typescript@">=7.0.0"
 ```
 
-Declare the packages you use in `package.json` as tarballs in `.deps/`:
-
-```json
-"@systemfsoftware/effect-microsandbox": "file:.deps/effect-microsandbox.tgz",
-"@systemfsoftware/effect-daemon-microvm": "file:.deps/effect-daemon-microvm.tgz"
-```
-
-Add `.deps/` to `.gitignore`.
+`effect` and `typescript` are peer dependencies: the packages declare them but do not install them, so one copy is shared with the rest of your project. Install only the package you use; `@systemfsoftware/effect-daemon-microvm` depends on `@systemfsoftware/effect-microsandbox`.
 
 ## Usage
 

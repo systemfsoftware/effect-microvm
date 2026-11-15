@@ -12,9 +12,11 @@ in-process fiber reference.
 
 ## Installation
 
-https://nix.systemfsoftware.com is the package registry for `@systemfsoftware` packages: a producer pushes its package tarballs there from `main`, a consumer substitutes them through its flake inputs, and nothing is published to npm.
+```sh
+pnpm add @systemfsoftware/effect-daemon-microvm effect@^4.1.2 typescript@">=7.0.0"
+```
 
-Take `@systemfsoftware/effect-daemon-microvm` from the repository's flake, which pins its tarballs in `flake.lock`; `@systemfsoftware/effect-daemon-spec` comes from the `effect-daemon` flake the same way. See the repository README's [Install](../../README.md#install) section.
+`effect` and `typescript` are peer dependencies: this package declares them but does not install them, so one copy is shared with the rest of your project. `@systemfsoftware/effect-daemon-spec` and the other `@systemfsoftware` packages it uses install with it.
 
 ## Quick start
 
