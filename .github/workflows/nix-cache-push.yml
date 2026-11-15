@@ -85,9 +85,8 @@ jobs:
             build "packages.$SYSTEM.$attr"
           done <<< "$attrs"
           # Not workspace members, but the dev shell realises them on every CI run: pnpm-store is the npm
-          # closure (nix copy pushes it with its references), producer-tarballs the producers' tarballs.
+          # closure (nix copy pushes it with its references).
           build "packages.$SYSTEM.pnpm-store"
-          build "packages.$SYSTEM.producer-tarballs"
       - name: Push the closures and check the cache serves them
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

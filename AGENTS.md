@@ -14,9 +14,9 @@ Extracted from `systemfsoftware/systemfsoftware` (core); package history came wi
 
 ## Dependencies on core
 
-https://nix.systemfsoftware.com is the package registry for `@systemfsoftware` packages: a producer pushes its package tarballs there from `main`, a consumer substitutes them through its flake inputs, and nothing is published to npm.
-
-`flake.nix` pins core, `effect-readiness` and `effect-daemon` at full commits (inputs `core`, `effect-readiness` and `effect-daemon`). `lib.mkProducerTarballs` lays their tarballs under `.deps/`, and `pnpm-workspace.yaml` maps each package to `file:.deps/<name>.tgz` through `overrides`. `effect-daemon` does not push to the registry yet, so its two tarballs (`effect-daemon-spec` and `effect-daemon-conformance`) build from source on a cold setup until it does. To take newer packages: bump the input, regenerate the overrides with `nix eval --raw .#producer-tarballs.overrides`, then run `pnpm update '@systemfsoftware/*'`.
+`@systemfsoftware` packages come from npm like any other dependency: package manifests and catalogs name caret
+ranges and `pnpm-lock.yaml` holds the exact versions. Take newer ones with `pnpm update '@systemfsoftware/*'`.
+`flake.nix` pins core at a full commit (input `core`) only for its dprint build and its nixpkgs.
 
 Local setup:
 

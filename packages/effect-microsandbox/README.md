@@ -6,7 +6,11 @@ Built on the [`microsandbox`](https://github.com/superradcompany/microsandbox) n
 
 ## Quick Start
 
-Take `@systemfsoftware/effect-microsandbox` from the repository's flake, which pins its tarball in `flake.lock`; see the repository README's [Install](../../README.md#install) section.
+```sh
+pnpm add @systemfsoftware/effect-microsandbox effect@^4.1.2 typescript@">=7.0.0"
+```
+
+`effect` and `typescript` are peer dependencies: this package declares them but does not install them, so one copy is shared with the rest of your project.
 
 ```ts
 import { NodeRuntime } from '@effect/platform-node'
