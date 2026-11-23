@@ -42,7 +42,7 @@
     "mutation": "stryker run",
     "smoke": "pnpm exec turbo run smoke:journey --filter=@systemfsoftware/effect-microsandbox",
     "smoke:journey": "node examples/boot-alpine.ts",
-    "lint": "f=${OXLINT_FORMAT:-${AGENT:+agent}}; oxlint . --format=${f:-default}",
+    "lint": "f=${OXLINT_FORMAT:-${AGENT:+agent}}; effect-tsgo oxlint . --format=${f:-default}",
     "attw": "attw --pack .",
     "api:check": "api-extractor-quiet run",
     "api:update": "api-extractor run --local"
