@@ -1,5 +1,9 @@
 # @systemfsoftware/effect-daemon-microvm
 
+## 2.0.2
+
+Depends on `@systemfsoftware` packages through caret ranges on versions published to npm, so the package installs from the npm registry.
+
 ## 2.0.1
 
 Updated dependency @systemfsoftware/effect-microsandbox to 6.1.0
